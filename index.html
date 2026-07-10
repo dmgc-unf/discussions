@@ -319,25 +319,25 @@
             <label>URL del Video de YouTube</label>
             <input v-model="rawYoutubeUrl" type="text" placeholder="https://www.youtube.com/watch?v=..." />
           </div>
-          <button @click="updateSessionMetadata" class="btn-success">💾 Guardar Título y Video</button>
+          <button @click="updateSessionMetadata" class="btn-success">💾 Save title and Video</button>
         </div>
 
-        <h3>Preguntas Actuales ({{ questions.length }})</h3>
+        <h3>Current Questions ({{ questions.length }})</h3>
 
         <!-- Lista de preguntas editables / borrables -->
         <div v-for="(q, idx) in questions" :key="q.id" class="question-block" style="border-left-color: var(--danger);">
           <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
-          <button @click="deleteQuestion(q.id)" class="delete-btn" title="Eliminar Pregunta">❌</button>
+          <button @click="deleteQuestion(q.id)" class="delete-btn" title="Delete Question">❌</button>
         </div>
 
         <!-- Añadir Nueva Pregunta Indefinidamente -->
         <div class="admin-box" style="border-color: var(--accent);">
           <div class="form-group">
-            <label>➕ Añadir nueva pregunta al módulo</label>
+            <label>➕ Add new question to module</label>
             <textarea v-model="newQuestionText" rows="2"
               placeholder="Escribe la nueva consigna académica aquí..."></textarea>
           </div>
-          <button @click="addQuestion" :disabled="!newQuestionText.trim()">Añadir Pregunta</button>
+          <button @click="addQuestion" :disabled="!newQuestionText.trim()">Add Question</button>
         </div>
       </div>
 
@@ -355,21 +355,21 @@
         </div>
 
         <div class="form-group">
-          <label>Tu Nombre completo</label>
-          <input v-model="studentName" type="text" placeholder="Ej. Luis Navarro" @change="saveName" />
+          <label>Your Name</label>
+          <input v-model="studentName" type="text" placeholder="Ex. Jessica" @change="saveName" />
         </div>
 
         <!-- Inputs dinámicos según las preguntas existentes -->
         <div v-for="(q, idx) in questions" :key="q.id" class="question-block">
           <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
           <div class="form-group">
-            <label>Tu Respuesta</label>
-            <textarea v-model="answers[q.id]" rows="3" :placeholder="'Escribe aquí tu respuesta...'"></textarea>
+            <label>Your Answer</label>
+            <textarea v-model="answers[q.id]" rows="3" :placeholder="'Type your answer here...'"></textarea>
           </div>
         </div>
 
         <button @click="submitAnswers" :disabled="!studentName.trim() || !allQuestionsAnswered">
-          Publicar en el Foro Live
+          Publish in Forum
         </button>
       </div>
 
@@ -378,7 +378,7 @@
       <!-- =================================================== -->
       <div class="panel feed-panel">
         <h2>
-          Respuestas de la Comunidad
+          Peer Submissions
           <span class="live-badge">● LIVE</span>
         </h2>
 
@@ -487,7 +487,7 @@
 
         const addQuestion = async () => {
           if (!newQuestionText.value.trim()) return
-          
+
           // Generamos un ID numérico aleatorio único de 6 dígitos para evitar el autoincremento de Postgres
           const randomId = Math.floor(100000 + Math.random() * 900000)
           const nextIndex = questions.value.length + 1
@@ -507,7 +507,7 @@
         }
 
         const deleteQuestion = async (id) => {
-          if (confirm('¿Seguro que deseas eliminar esta pregunta? Se borrarán también las respuestas asociadas.')) {
+          if (confirm('Are you sure you want to delete this question? Associated responses will be deleted too.')) {
             await supabase.from('case_study_questions').delete().eq('id', id)
             await fetchMetadataAndQuestions()
           }
