@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classroom Live Forum</title>
+
+  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+        "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-panel: #1e293b;
+      --bg-card: #293548;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --border: #334155;
+      --danger: #ef4444;
+    }
+
+    body, html {
+      margin: 0; padding: 0; height: 100vh;
+      background-color: var(--bg-main); color: var(--text-main);
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-container { display: flex; height: 100vh; }
+    .panel { padding: 2rem; box-sizing: border-box; display: flex; flex-direction: column; overflow-y: auto; }
+    .input-panel { width: 45%; background: var(--bg-panel); border-right: 1px solid var(--border); box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2); z-index: 10; }
+    .feed-panel { width: 55%; background: var(--bg-main); }
+
+    h2 { font-size: 1.5rem; font-weight: 700; margin-top: 0; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
+    
+    .live-badge { font-size: 0.8rem; background: rgba(56, 189, 248, 0.15); color: var(--accent); padding: 0.25rem 0.75rem; border-radius: 9999px; border: 1px solid rgba(56, 189, 248, 0.3); }
+
+    /* Contenedor de Video de YouTube Responsivo */
+    .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin-bottom: 1.5rem; border-radius: 8px; border: 1px solid var(--border); }
+    .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+
+    .question-block { background: rgba(255, 255, 255, 0.02); padding: 1.25rem; border-radius: 8px; border-left: 4px solid var(--accent); margin-bottom: 1.5rem; }
+    .question-text { font-size: 1.05rem; line-height: 1.5; margin: 0 0 1rem 0; color: #e2e8f0; }
+
+    .form-group { margin-bottom: 1.2rem; }
+    label { display: block; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; color: var(--text-muted); }
+    input, textarea { width: 100%; padding: 0.8rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); box-sizing: border-box; font-size: 0.95rem; transition: all 0.3s ease; }
+    input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
+
+    button { background: var(--accent); color: var(--bg-main); padding: 0.9rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.95rem; transition: all 0.2s ease; margin-top: 0.5rem; box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2); }
+    button:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
+    button:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; box-shadow: none; }
+
+    .feed-container { flex-grow: 1; }
+    .post-card { background: var(--bg-card); padding: 1.25rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid var(--border); position: relative; }
+    .post-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; padding-right: 25px; }
+    .post-header strong { color: var(--accent); }
+    .time { color: var(--text-muted); }
+    .post-body-segment { margin-bottom: 0.75rem; }
+    .post-body-segment:last-child { margin-bottom: 0; }
+    .q-label { font-size: 0.8rem; color: var(--text-muted); display: block; font-style: italic; }
+    .post-body { margin: 0; line-height: 1.5; color: #e2e8f0; white-space: pre-wrap; }
+
+    /* Botón eliminar */
+    .delete-btn { position: absolute; top: 1.1rem; right: 1.1rem; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 0; box-shadow: none; margin: 0; }
+    .delete-btn:hover { color: var(--danger); transform: none; }
+    .empty { color: var(--text-muted); font-style: italic; text-align: center; padding-top: 3rem; }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="app-container">
+      
+      <!-- PANEL IZQUIERDO: CONTENIDO Y FORMULARIO -->
+      <div class="panel input-panel">
+        <h2>{{ sessionTitle }}</h2>
+
+        <!-- Renderizado dinámico del Video de YouTube si existe -->
+        <div v-if="youtubeEmbedUrl" class="video-container">
+          <iframe :src="youtubeEmbedUrl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+
+        <!-- Nombre del Estudiante (Persistente) -->
+        <div class="form-group">
+          <label>Tu Nombre completo</label>
+          <input v-model="studentName" type="text" placeholder="Ej. Luis Navarro" @change="saveName" />
+        </div>
+
+        <!-- Renderizado dinámico de las Preguntas de la Sesión -->
+        <div v-for="(q, idx) in questions" :key="q.id" class="question-block">
+          <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
+          <div class="form-group">
+            <label>Tu Respuesta</label>
+            <textarea v-model="answers[q.id]" rows="3" :placeholder="'Escribe aquí tu respuesta a la pregunta ' + (idx + 1) + '...'"></textarea>
+          </div>
+        </div>
+
+        <button @click="submitAnswers" :disabled="!studentName.trim() || !allQuestionsAnswered">
+          Publicar en el Foro Live
+        </button>
+      </div>
+
+      <!-- PANEL DERECHO: FEED EN TIEMPO REAL -->
+      <div class="panel feed-panel">
+        <h2>
+          Respuestas de la Comunidad
+          <span class="live-badge">● LIVE</span>
+        </h2>
+        
+        <div class="feed-container">
+          <div v-if="posts.length === 0" class="empty">Esperando participaciones...</div>
+          
+          <div v-for="post in posts" :key="post.id" class="post-card">
+            <!-- Botón de Borrado con validación de dueño o Admin -->
+            <button v-if="isAdmin || post.student_name === studentName" 
+                    @click="deletePost(post.id)" 
+                    class="delete-btn" title="Eliminar respuesta">❌</button>
+            
+            <div class="post-header">
+              <strong>{{ post.student_name }}</strong>
+              <span class="time">{{ formatTime(post.created_at) }}</span>
+            </div>
+
+            <!-- Muestra cada par de pregunta/respuesta guardado en el JSON -->
+            <div v-for="(ansText, qId) in post.responses_json" :key="qId" class="post-body-segment">
+              <span class="q-label">{{ getQuestionTextById(qId) }}</span>
+              <p class="post-body">{{ ansText }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { createApp, ref, onMounted, onUnmounted, computed } from 'vue'
+    import { createClient } from '@supabase/supabase-js'
+
+    createApp({
+      setup() {
+        const supabaseUrl = 'https://jomqgtqtwgaxdgwywhtg.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvbXFndHF0d2dheGRnd3l3aHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTkyNDgsImV4cCI6MjA5ODQ5NTI0OH0.aTKt1oLBpyMMNL0S2Lcv3C1ZyOkmDcxNP2J2BgxluBg'
+        const supabase = createClient(supabaseUrl, supabaseKey)
+
+        const urlParams = new URLSearchParams(window.location.search)
+        const sessionId = ref(urlParams.get('session') || 'general')
+        
+        // Clave secreta para el profesor en la URL: ?session=X&admin=profesor123
+        const isAdmin = computed(() => urlParams.get('admin') === 'profesor123') 
+
+        const sessionTitle = ref('Cargando módulo...')
+        const youtubeEmbedUrl = ref(null)
+        const questions = ref([])
+        const answers = ref({})
+        const posts = ref([])
+        const studentName = ref(localStorage.getItem('saved_student_name') || '')
+        let realtimeChannel = null
+
+        const saveName = () => {
+          localStorage.setItem('saved_student_name', studentName.value)
+        }
+
+        // Convierte links normales de YouTube a links embebibles válidos
+        const formatYoutubeUrl = (url) => {
+          if (!url) return null
+          let videoId = ''
+          if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1]?.split('?')[0]
+          else if (url.includes('v=')) videoId = url.split('v=')[1]?.split('&')[0]
+          return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+        }
+
+        // 1. Obtener la configuración del módulo y sus preguntas desde la Base de Datos
+        const fetchMetadataAndQuestions = async () => {
+          // Buscamos si existe metadata para este modulo (título, video)
+          const { data: modData } = await supabase
+            .from('case_study_sessions')
+            .select('*')
+            .eq('id', sessionId.value)
+            .single()
+
+          if (modData) {
+            sessionTitle.value = modData.title
+            youtubeEmbedUrl.value = formatYoutubeUrl(modData.youtube_url)
+          } else {
+            sessionTitle.value = `Sesión: ${sessionId.value}`
+          }
+
+          // Traemos todas las preguntas vinculadas a este ID de sesión
+          const { data: qData } = await supabase
+            .from('case_study_questions')
+            .select('*')
+            .eq('session_id', sessionId.value)
+            .order('order_index', { ascending: true })
+
+          if (qData) {
+            questions.value = qData
+            // Inicializa reactivamente el objeto de respuestas
+            qData.forEach(q => { answers.value[q.id] = '' })
+          }
+        }
+
+        const fetchPosts = async () => {
+          const { data, error } = await supabase
+            .from('case_study_responses_v2')
+            .select('*')
+            .eq('session_id', sessionId.value)
+            .order('created_at', { ascending: false })
+
+          if (!error) posts.value = data
+        }
+
+        const allQuestionsAnswered = computed(() => {
+          if (questions.value.length === 0) return false
+          return questions.value.every(q => answers.value[q.id] && answers.value[q.id].trim() !== '')
+        })
+
+        const submitAnswers = async () => {
+          if (!studentName.value.trim() || !allQuestionsAnswered.value) return
+
+          // Guardamos las respuestas estructuradas en formato clave/valor (ID_Pregunta: Texto)
+          const { error } = await supabase
+            .from('case_study_responses_v2')
+            .insert([{
+              student_name: studentName.value,
+              responses_json: answers.value,
+              session_id: sessionId.value
+            }])
+
+          if (!error) {
+            // Limpia los campos de texto tras enviar
+            questions.value.forEach(q => { answers.value[q.id] = '' })
+          }
+        }
+
+        const deletePost = async (id) => {
+          if (confirm('¿Seguro que deseas eliminar esta participación?')) {
+            await supabase
+              .from('case_study_responses_v2')
+              .delete()
+              .eq('id', id)
+          }
+        }
+
+        const getQuestionTextById = (id) => {
+          const match = questions.value.find(q => q.id == id)
+          return match ? match.question_text : 'Pregunta:'
+        }
+
+        const formatTime = (dateString) => {
+          return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+
+        onMounted(async () => {
+          await fetchMetadataAndQuestions()
+          await fetchPosts()
+
+          // Canal en tiempo real para escuchar NUEVAS inserciones Y ELIMINACIONES
+          realtimeChannel = supabase
+            .channel(`public:case_study_responses_v2:${sessionId.value}`)
+            .on('postgres_changes', {
+              event: '*',
+              schema: 'public',
+              table: 'case_study_responses_v2',
+              filter: `session_id=eq.${sessionId.value}`
+            }, (payload) => {
+              if (payload.eventType === 'INSERT') {
+                posts.value.unshift(payload.new)
+              } else if (payload.eventType === 'DELETE') {
+                posts.value = posts.value.filter(p => p.id !== payload.old.id)
+              }
+            })
+            .subscribe()
+        })
+
+        onUnmounted(() => {
+          if (realtimeChannel) supabase.removeChannel(realtimeChannel)
+        })
+
+        return {
+          studentName,
+          sessionTitle,
+          youtubeEmbedUrl,
+          questions,
+          answers,
+          posts,
+          isAdmin,
+          allQuestionsAnswered,
+          submitAnswers,
+          deletePost,
+          getQuestionTextById,
+          formatTime,
+          saveName
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
+</html>
+
+<!-- 
+-- ==========================================
+-- 1. CREACIÓN DE LAS TABLAS (Sintaxis Corregida)
+-- ==========================================
+
+-- Tabla de Sesiones/Módulos (Títulos y Videos)
+CREATE TABLE public.case_study_sessions (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    youtube_url TEXT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Tabla de Preguntas (Permite un número indefinido de preguntas por sesión)
+CREATE TABLE public.case_study_questions (
+    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    session_id TEXT REFERENCES public.case_study_sessions(id) ON DELETE CASCADE NOT NULL,
+    question_text TEXT NOT NULL,
+    order_index INT DEFAULT 1 NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Tabla de Respuestas (Versión 2 con soporte JSON para múltiples campos)
+CREATE TABLE public.case_study_responses_v2 (
+    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    session_id TEXT REFERENCES public.case_study_sessions(id) ON DELETE CASCADE NOT NULL,
+    student_name TEXT NOT NULL,
+    responses_json JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+
+-- ==========================================
+-- 2. HABILITAR TIEMPO REAL (REALTIME)
+-- ==========================================
+-- Esto es crítico para que las respuestas aparezcan y desaparezcan al instante.
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.case_study_responses_v2;
+
+
+-- ==========================================
+-- 3. INSERTAR DATOS DE PRUEBA (EJEMPLOS)
+-- ==========================================
+
+-- Insertar un par de sesiones de prueba
+INSERT INTO public.case_study_sessions (id, title, youtube_url) VALUES
+('510-module1', 'DMGC 510 - Intercultural Communication (Intro)', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+('620-module1', 'DMGC 620 - Emerging Tech & Metaverse', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+
+-- Insertar preguntas asociadas a la sesión DMGC 510
+INSERT INTO public.case_study_questions (session_id, question_text, order_index) VALUES
+('510-module1', 'What are your first impressions of Module 1 and visual communication?', 1),
+('510-module1', 'What experience do you have with content creation and graphic design?', 2);
+
+-- Insertar preguntas asociadas a la sesión DMGC 620
+INSERT INTO public.case_study_questions (session_id, question_text, order_index) VALUES
+('620-module1', 'What did you think of this week''s module regarding Virtual Reality (VR)?', 1),
+('620-module1', 'What is your current understanding or opinion of the Metaverse?', 2),
+('620-module1', 'In conclusion, why is it important to study emerging technologies in a digital media context?', 3); -->

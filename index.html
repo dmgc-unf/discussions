@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classroom Live Forum & CMS</title>
+
+  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+        "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-panel: #1e293b;
+      --bg-card: #293548;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --border: #334155;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .panel {
+      padding: 2rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .input-panel {
+      width: 45%;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+      z-index: 10;
+    }
+
+    .feed-panel {
+      width: 55%;
+      background: var(--bg-main);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .live-badge {
+      font-size: 0.8rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .admin-badge {
+      font-size: 0.8rem;
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid var(--danger);
+    }
+
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .question-block {
+      background: rgba(255, 255, 255, 0.02);
+      padding: 1.25rem;
+      border-radius: 8px;
+      border-left: 4px solid var(--accent);
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .question-text {
+      font-size: 1.05rem;
+      line-height: 1.5;
+      margin: 0 0 1rem 0;
+      color: #e2e8f0;
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+      color: var(--text-muted);
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 0.8rem;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-main);
+      box-sizing: border-box;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+    }
+
+    button {
+      background: var(--accent);
+      color: var(--bg-main);
+      padding: 0.9rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      margin-top: 0.5rem;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: var(--bg-main);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+    }
+
+    .feed-container {
+      flex-grow: 1;
+    }
+
+    .post-card {
+      background: var(--bg-card);
+      padding: 1.25rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .post-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      padding-right: 25px;
+    }
+
+    .post-header strong {
+      color: var(--accent);
+    }
+
+    .time {
+      color: var(--text-muted);
+    }
+
+    .post-body-segment {
+      margin-bottom: 0.75rem;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+      padding-bottom: 0.5rem;
+    }
+
+    .post-body-segment:last-child {
+      margin-bottom: 0;
+      border: none;
+      padding-bottom: 0;
+    }
+
+    .q-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: block;
+      font-style: italic;
+      margin-bottom: 0.2rem;
+    }
+
+    .post-body {
+      margin: 0;
+      line-height: 1.5;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 1.1rem;
+      right: 1.1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 0;
+      box-shadow: none;
+      margin: 0;
+    }
+
+    .delete-btn:hover {
+      color: var(--danger);
+    }
+
+    .empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding-top: 3rem;
+    }
+
+    .admin-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--border);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="app-container">
+
+      <!-- =================================================== -->
+      <!-- CONFIGURACIÓN MODO ADMINISTRADOR (PROFESOR)         -->
+      <!-- =================================================== -->
+      <div v-if="isAdmin" class="panel input-panel">
+        <h2>
+          Panel de Gestión (CMS)
+          <span class="admin-badge">🛠️ PROFESOR</span>
+        </h2>
+
+        <!-- Editar metadatos de la sesión -->
+        <div class="admin-box">
+          <div class="form-group">
+            <label>Título del Módulo/Sesión</label>
+            <input v-model="sessionTitle" type="text" />
+          </div>
+          <div class="form-group">
+            <label>URL del Video de YouTube</label>
+            <input v-model="rawYoutubeUrl" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+          </div>
+          <button @click="updateSessionMetadata" class="btn-success">💾 Guardar Título y Video</button>
+        </div>
+
+        <h3>Preguntas Actuales ({{ questions.length }})</h3>
+
+        <!-- Lista de preguntas editables / borrables -->
+        <div v-for="(q, idx) in questions" :key="q.id" class="question-block" style="border-left-color: var(--danger);">
+          <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
+          <button @click="deleteQuestion(q.id)" class="delete-btn" title="Eliminar Pregunta">❌</button>
+        </div>
+
+        <!-- Añadir Nueva Pregunta Indefinidamente -->
+        <div class="admin-box" style="border-color: var(--accent);">
+          <div class="form-group">
+            <label>➕ Añadir nueva pregunta al módulo</label>
+            <textarea v-model="newQuestionText" rows="2"
+              placeholder="Escribe la nueva consigna académica aquí..."></textarea>
+          </div>
+          <button @click="addQuestion" :disabled="!newQuestionText.trim()">Añadir Pregunta</button>
+        </div>
+      </div>
+
+      <!-- =================================================== -->
+      <!-- CONFIGURACIÓN MODO ESTUDIANTE                       -->
+      <!-- =================================================== -->
+      <div v-else class="panel input-panel">
+        <h2>{{ sessionTitle }}</h2>
+
+        <!-- Video de YouTube -->
+        <div v-if="youtubeEmbedUrl" class="video-container">
+          <iframe :src="youtubeEmbedUrl"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+        </div>
+
+        <div class="form-group">
+          <label>Tu Nombre completo</label>
+          <input v-model="studentName" type="text" placeholder="Ej. Luis Navarro" @change="saveName" />
+        </div>
+
+        <!-- Inputs dinámicos según las preguntas existentes -->
+        <div v-for="(q, idx) in questions" :key="q.id" class="question-block">
+          <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
+          <div class="form-group">
+            <label>Tu Respuesta</label>
+            <textarea v-model="answers[q.id]" rows="3" :placeholder="'Escribe aquí tu respuesta...'"></textarea>
+          </div>
+        </div>
+
+        <button @click="submitAnswers" :disabled="!studentName.trim() || !allQuestionsAnswered">
+          Publicar en el Foro Live
+        </button>
+      </div>
+
+      <!-- =================================================== -->
+      <!-- PANEL DERECHO (FEED COMÚN EN TIEMPO REAL)           -->
+      <!-- =================================================== -->
+      <div class="panel feed-panel">
+        <h2>
+          Respuestas de la Comunidad
+          <span class="live-badge">● LIVE</span>
+        </h2>
+
+        <div class="feed-container">
+          <div v-if="posts.length === 0" class="empty">Esperando participaciones...</div>
+
+          <div v-for="post in posts" :key="post.id" class="post-card">
+            <button v-if="isAdmin || post.student_name === studentName" @click="deletePost(post.id)" class="delete-btn"
+              title="Eliminar respuesta">❌</button>
+
+            <div class="post-header">
+              <strong>{{ post.student_name }}</strong>
+              <span class="time">{{ formatTime(post.created_at) }}</span>
+            </div>
+
+            <div v-for="(ansText, qId) in post.responses_json" :key="qId" class="post-body-segment">
+              <span class="q-label">{{ getQuestionTextById(qId) }}</span>
+              <p class="post-body">{{ ansText }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { createApp, ref, onMounted, onUnmounted, computed } from 'vue'
+    import { createClient } from '@supabase/supabase-js'
+
+    createApp({
+      setup() {
+        const supabaseUrl = 'https://jomqgtqtwgaxdgwywhtg.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvbXFndHF0d2dheGRnd3l3aHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTkyNDgsImV4cCI6MjA5ODQ5NTI0OH0.aTKt1oLBpyMMNL0S2Lcv3C1ZyOkmDcxNP2J2BgxluBg'
+        const supabase = createClient(supabaseUrl, supabaseKey)
+
+        const urlParams = new URLSearchParams(window.location.search)
+        const sessionId = ref(urlParams.get('session') || 'general')
+        const isAdmin = computed(() => urlParams.get('admin') === 'profesor123')
+
+        const sessionTitle = ref('Cargando módulo...')
+        const rawYoutubeUrl = ref('')
+        const youtubeEmbedUrl = ref(null)
+        const questions = ref([])
+        const answers = ref({})
+        const posts = ref([])
+        const studentName = ref(localStorage.getItem('saved_student_name') || '')
+        const newQuestionText = ref('')
+        let realtimeChannel = null
+
+        const saveName = () => {
+          localStorage.setItem('saved_student_name', studentName.value)
+        }
+
+        const formatYoutubeUrl = (url) => {
+          if (!url) return null
+          let videoId = ''
+          if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1]?.split('?')[0]
+          else if (url.includes('v=')) videoId = url.split('v=')[1]?.split('&')[0]
+          return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+        }
+
+        const fetchMetadataAndQuestions = async () => {
+          const { data: modData } = await supabase
+            .from('case_study_sessions')
+            .select('*')
+            .eq('id', sessionId.value)
+            .maybeSingle()
+
+          if (modData) {
+            sessionTitle.value = modData.title
+            rawYoutubeUrl.value = modData.youtube_url || ''
+            youtubeEmbedUrl.value = formatYoutubeUrl(modData.youtube_url)
+          } else if (isAdmin.value) {
+            // Si el admin entra a una sesión nueva que no existe, la inicializamos
+            sessionTitle.value = `Nuevo Módulo: ${sessionId.value}`
+          }
+
+          const { data: qData } = await supabase
+            .from('case_study_questions')
+            .select('*')
+            .eq('session_id', sessionId.value)
+            .order('order_index', { ascending: true })
+
+          if (qData) {
+            questions.value = qData
+            qData.forEach(q => { if (!answers.value[q.id]) answers.value[q.id] = '' })
+          }
+        }
+
+        // --- MÉTODOS DEL PROFESOR (CMS EXCLUSIVO) ---
+        const updateSessionMetadata = async () => {
+          const { error } = await supabase
+            .from('case_study_sessions')
+            .upsert({
+              id: sessionId.value,
+              title: sessionTitle.value,
+              youtube_url: rawYoutubeUrl.value
+            })
+
+          if (!error) {
+            youtubeEmbedUrl.value = formatYoutubeUrl(rawYoutubeUrl.value)
+            alert('¡Metadatos guardados con éxito!')
+          }
+        }
+
+        const addQuestion = async () => {
+          if (!newQuestionText.value.trim()) return
+          
+          // Generamos un ID numérico aleatorio único de 6 dígitos para evitar el autoincremento de Postgres
+          const randomId = Math.floor(100000 + Math.random() * 900000)
+          const nextIndex = questions.value.length + 1
+          const { error } = await supabase
+            .from('case_study_questions')
+            .insert([{
+              id: randomId, // <-- Le enviamos el ID nosotros directamente
+              session_id: sessionId.value,
+              question_text: newQuestionText.value,
+              order_index: nextIndex
+            }])
+
+          if (!error) {
+            newQuestionText.value = ''
+            await fetchMetadataAndQuestions() // Recarga preguntas locales
+          }
+        }
+
+        const deleteQuestion = async (id) => {
+          if (confirm('¿Seguro que deseas eliminar esta pregunta? Se borrarán también las respuestas asociadas.')) {
+            await supabase.from('case_study_questions').delete().eq('id', id)
+            await fetchMetadataAndQuestions()
+          }
+        }
+
+        // --- MÉTODOS DEL ALUMNO ---
+        const fetchPosts = async () => {
+          const { data, error } = await supabase
+            .from('case_study_responses_v2')
+            .select('*')
+            .eq('session_id', sessionId.value)
+            .order('created_at', { ascending: false })
+
+          if (!error) posts.value = data
+        }
+
+        const allQuestionsAnswered = computed(() => {
+          if (questions.value.length === 0) return false
+          return questions.value.every(q => answers.value[q.id] && answers.value[q.id].trim() !== '')
+        })
+
+        const submitAnswers = async () => {
+          if (!studentName.value.trim() || !allQuestionsAnswered.value) return
+
+          const { error } = await supabase
+            .from('case_study_responses_v2')
+            .insert([{
+              student_name: studentName.value,
+              responses_json: answers.value,
+              session_id: sessionId.value
+            }])
+
+          if (!error) {
+            questions.value.forEach(q => { answers.value[q.id] = '' })
+          }
+        }
+
+        const deletePost = async (id) => {
+          if (confirm('¿Seguro que deseas eliminar esta participación?')) {
+            await supabase.from('case_study_responses_v2').delete().eq('id', id)
+          }
+        }
+
+        const getQuestionTextById = (id) => {
+          const match = questions.value.find(q => q.id == id)
+          return match ? match.question_text : 'Consigna:'
+        }
+
+        const formatTime = (dateString) => {
+          return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+
+        onMounted(async () => {
+          await fetchMetadataAndQuestions()
+          await fetchPosts()
+
+          realtimeChannel = supabase
+            .channel(`public:case_study_responses_v2:${sessionId.value}`)
+            .on('postgres_changes', {
+              event: '*',
+              schema: 'public',
+              table: 'case_study_responses_v2',
+              filter: `session_id=eq.${sessionId.value}`
+            }, (payload) => {
+              if (payload.eventType === 'INSERT') {
+                // Evitamos duplicados locales si la conexión fluctúa
+                if (!posts.value.some(p => p.id === payload.new.id)) {
+                  posts.value.unshift(payload.new)
+                }
+              } else if (payload.eventType === 'DELETE') {
+                // Corrección de tipos robusta para borrado inmediato en vivo
+                const targetId = payload.old.id;
+                posts.value = posts.value.filter(p => p.id != targetId)
+              }
+            })
+            .subscribe()
+        })
+
+        onUnmounted(() => {
+          if (realtimeChannel) supabase.removeChannel(realtimeChannel)
+        })
+
+        return {
+          studentName, sessionTitle, rawYoutubeUrl, youtubeEmbedUrl,
+          questions, answers, posts, isAdmin, newQuestionText, allQuestionsAnswered,
+          submitAnswers, deletePost, getQuestionTextById, formatTime, saveName,
+          updateSessionMetadata, addQuestion, deleteQuestion
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
+
+</html>
