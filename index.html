@@ -19,16 +19,26 @@
 
   <style>
     :root {
-      --bg-main: #0f172a;
-      --bg-panel: #1e293b;
-      --bg-card: #293548;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent: #38bdf8;
-      --accent-hover: #0ea5e9;
-      --border: #334155;
-      --danger: #ef4444;
-      --success: #22c55e;
+      --bg-main: #ffffff;
+      /* Blanco puro */
+      --bg-panel: #fafafa;
+      /* Gris sutil para panel lateral */
+      --bg-card: #ffffff;
+      /* Tarjetas limpias sobre fondo */
+      --text-main: #111111;
+      /* Negro para texto principal */
+      --text-muted: #666666;
+      /* Gris medio para textos secundarios */
+      --accent: #111111;
+      /* Negro puro para botones y nombres */
+      --accent-hover: #333333;
+      /* Gris oscuro para hover */
+      --border: #e5e5e5;
+      /* Bordes delgados y muy tenues */
+      --danger: #ff3333;
+      /* Rojo para botones críticos */
+      --success: #111111;
+      /* Unificado a negro para mantener minimalismo */
     }
 
     body,
@@ -92,10 +102,10 @@
     .admin-badge {
       font-size: 0.8rem;
       background: rgba(239, 68, 68, 0.15);
-      color: var(--danger);
+      color: var(--text-muted);
       padding: 0.25rem 0.75rem;
       border-radius: 9999px;
-      border: 1px solid var(--danger);
+      border: 1px solid var(--text-main);
     }
 
     /* Contenedor y galería de videos */
@@ -145,7 +155,7 @@
       font-size: 1.05rem;
       line-height: 1.5;
       margin: 0 0 1rem 0;
-      color: #e2e8f0;
+      color: var(--text-main);
     }
 
     .form-group {
@@ -209,7 +219,7 @@
     }
 
     .btn-danger {
-      background: var(--danger);
+      background: var(--bg-card);
       color: white;
       box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
     }
@@ -272,7 +282,7 @@
     .post-body {
       margin: 0;
       line-height: 1.5;
-      color: #e2e8f0;
+      color: var(--text-main);
       white-space: pre-wrap;
     }
 
@@ -347,7 +357,7 @@
 
         <h3>Current Questions ({{ questions.length }})</h3>
 
-        <div v-for="(q, idx) in questions" :key="q.id" class="question-block" style="border-left-color: var(--danger);">
+        <div v-for="(q, idx) in questions" :key="q.id" class="question-block" style="border-left-color: var(--text-main);">
           <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
           <button @click="deleteQuestion(q.id)" class="delete-btn" title="Eliminar Pregunta">❌</button>
         </div>
@@ -355,8 +365,7 @@
         <div class="admin-box" style="border-color: var(--accent);">
           <div class="form-group">
             <label>➕ ADD NEW QUESTIONS TO MODULE</label>
-            <textarea v-model="newQuestionText" rows="2"
-              placeholder="Escribe la nueva consigna académica aquí..."></textarea>
+            <textarea v-model="newQuestionText" rows="2" placeholder="Write here..."></textarea>
           </div>
           <button @click="addQuestion" :disabled="!newQuestionText.trim()">Add Question</button>
         </div>
@@ -366,10 +375,11 @@
       <!-- CONFIGURACIÓN MODO ESTUDIANTE                       -->
       <!-- =================================================== -->
       <div v-else class="panel input-panel">
-        <h2>{{ sessionTitle }}</h2>
+        <!-- <h2>{{ sessionTitle }}</h2> -->
 
+        <h2>Questions</h2>
         <!-- Galería dinámica de hasta 3 videos incorporados -->
-        <div class="video-gallery" v-if="youtubeEmbedUrls.length > 0">
+        <!-- <div class="video-gallery" v-if="youtubeEmbedUrls.length > 0">
           <div v-for="(embedUrl, index) in youtubeEmbedUrls" :key="index" class="video-wrapper">
             <div class="video-title-label">Video {{ index + 1 }}</div>
             <div class="video-container">
@@ -378,11 +388,11 @@
                 allowfullscreen></iframe>
             </div>
           </div>
-        </div>
+        </div> -->
 
         <div class="form-group">
           <label>Your Name</label>
-          <input v-model="studentName" type="text" placeholder="Ej. Luis Navarro" @change="saveName" />
+          <input v-model="studentName" type="text" placeholder="Ex. Jessica" @change="saveName" />
         </div>
 
         <div v-for="(q, idx) in questions" :key="q.id" class="question-block">
@@ -444,7 +454,7 @@
         const sessionId = ref(urlParams.get('session') || 'general')
         const isAdmin = computed(() => urlParams.get('admin') === 'profesor123')
 
-        const sessionTitle = ref('Cargando módulo...')
+        const sessionTitle = ref('Loading module...')
 
         // Manejamos un array estático para los 3 inputs del admin
         const youtubeUrls = ref(['', '', ''])
