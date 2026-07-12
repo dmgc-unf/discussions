@@ -272,7 +272,7 @@
     }
 
     .q-label {
-      font-size: 0.8rem;
+      font-size: 1rem;
       color: var(--text-muted);
       display: block;
       font-style: italic;
@@ -280,6 +280,7 @@
     }
 
     .post-body {
+      font-size: 0.75rem;
       margin: 0;
       line-height: 1.5;
       color: var(--text-main);
@@ -317,6 +318,76 @@
       padding: 1rem;
       border-radius: 8px;
       margin-bottom: 1.5rem;
+    }
+
+    /* make responses collapsable */
+    /* --- TARJETA COMPLETA COLAPSABLE --- */
+    .collapsible-card {
+      border: none;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+    }
+
+    /* Ocultamos las flechas del sistema */
+    .collapsible-card summary {
+      list-style: none;
+      outline: none;
+    }
+
+    .collapsible-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    /* Cuando la tarjeta está CERRADA, limitamos su altura global */
+    .collapsible-card:not([open]) .post-card {
+      max-height: 250px;
+      /* Ajusta este valor en píxeles según el límite que desees */
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Degradado difuminado inferior (solo visible si está cerrada) */
+    .collapsible-card:not([open]) .post-card::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: linear-gradient(transparent, var(--bg-card));
+      pointer-events: none;
+      /* Permite hacer clic a través del degradado */
+    }
+
+    /* Botón flotante o al pie de "Read More" */
+    .card-toggle-bar {
+      display: block;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.5rem 0;
+      margin-top: 0.25rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .card-toggle-bar:hover {
+      color: var(--text-main);
+      border-color: var(--text-muted);
+    }
+
+    /* Cambiamos el texto dinámicamente según el estado de la tarjeta */
+    .collapsible-card:not([open]) .card-toggle-bar::after {
+      content: "↓ Read Full Submission";
+    }
+
+    .collapsible-card[open] .card-toggle-bar::after {
+      content: "↑ Collapse Submission";
     }
   </style>
 </head>
@@ -357,7 +428,8 @@
 
         <h3>Current Questions ({{ questions.length }})</h3>
 
-        <div v-for="(q, idx) in questions" :key="q.id" class="question-block" style="border-left-color: var(--text-main);">
+        <div v-for="(q, idx) in questions" :key="q.id" class="question-block"
+          style="border-left-color: var(--text-main);">
           <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
           <button @click="deleteQuestion(q.id)" class="delete-btn" title="Eliminar Pregunta">❌</button>
         </div>
@@ -420,24 +492,45 @@
         <div class="feed-container">
           <div v-if="posts.length === 0" class="empty">Waiting for submissions...</div>
 
-          <div v-for="post in posts" :key="post.id" class="post-card">
-            <button v-if="isAdmin || post.student_name === studentName" @click="deletePost(post.id)" class="delete-btn"
-              title="Eliminar respuesta">❌</button>
+          <!-- Envolvemos cada tarjeta en un details independiente -->
+          <details v-for="post in posts" :key="post.id" class="collapsible-card">
 
-            <div class="post-header">
-              <strong>{{ post.student_name }}</strong>
-              <span class="time">{{ formatTime(post.created_at) }}</span>
-            </div>
+            <!-- El summary contendrá la tarjeta entera y la barra inferior de toggle -->
+            <summary style="cursor: pointer;">
 
-            <div v-for="(ansText, qId) in post.responses_json" :key="qId" class="post-body-segment">
+              <!-- <div v-for="post in posts" :key="post.id" class="post-card"> -->
+              <div class="post-card">
+                <button v-if="isAdmin || post.student_name === studentName" @click="deletePost(post.id)"
+                  class="delete-btn" title="Eliminar respuesta">❌</button>
+
+                <div class="post-header">
+                  <strong>{{ post.student_name }}</strong>
+                  <span class="time">{{ formatTime(post.created_at) }}</span>
+                </div>
+
+                <div v-for="(q, idx) in questions" :key="q.id" class="post-body-segment">
+                  <!-- Solo renderiza si el estudiante guardó una respuesta para esta pregunta -->
+                  <div v-if="post.responses_json[q.id]">
+                    <span class="q-label">Q{{ idx + 1 }}: {{ q.question_text }}</span>
+
+                    <!-- Componente colapsable nativo -->
+                    <p class="post-body" style="white-space: pre-wrap;">{{ post.responses_json[q.id] }}</p>
+
+                  </div>
+                </div>
+             
+          <!-- <div v-for="(ansText, qId) in post.responses_json" :key="qId" class="post-body-segment">
               <span class="q-label">{{ getQuestionTextById(qId) }}</span>
               <p class="post-body">{{ ansText }}</p>
-            </div>
-          </div>
+            </div> -->
         </div>
+           <span class="read-more-toggle"></span>
+            </summary>
+          </details>
       </div>
-
     </div>
+
+  </div>
   </div>
 
   <script type="module">
