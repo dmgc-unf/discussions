@@ -54,8 +54,7 @@
     html {
       margin: 0;
       padding: 0;
-      /* height: 100vh; */
-      min-height: 100vh;
+      height: 100vh;
       background-color: var(--bg-main);
       color: var(--text-main);
       font-family: 'Segoe UI', Roboto, Arial, sans-serif;
@@ -64,8 +63,7 @@
 
     .app-container {
       display: flex;
-      min-height: 100vh;
-      width: 100%;
+      height: 100vh;
     }
 
     .panel {
@@ -74,8 +72,7 @@
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      height: auto;
-      min-height: 100%;
+      /* height: 100%; */
     }
 
     /* .input-panel {
@@ -245,6 +242,7 @@
 
     button {
       background: var(--accent);
+      height: 3.5rem;
       color: var(--bg-main);
       padding: 0.9rem;
       border: none;
@@ -254,6 +252,7 @@
       font-size: 0.95rem;
       transition: all 0.2s ease;
       margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
       box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
     }
 
@@ -557,7 +556,7 @@
           </div>
 
           <button @click="submitAnswers" :disabled="!studentName.trim() || !allQuestionsAnswered"
-            style="width: 100%; margin-top: 1.5rem; margin-bottom: 3rem; padding: 1rem;">
+            style="width: 100%; ">
             🚀 Submit To Board
           </button>
         </div>
