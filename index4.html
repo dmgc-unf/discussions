@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classroom Live Forum & CMS (Multi-Video)</title>
+
+  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+  <!-- Editor.js Core -->
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.29.0"></script>
+  <!-- Plugin oficial de Imagen -->
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@2.9.0"></script>
+  <!-- Plugin para Listas (Bullet points y listas numeradas) -->
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1.10.0"></script>
+  <!-- Plugin para Títulos (H2, H3, H4) -->
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.1"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+        "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+      }
+    }
+
+    
+  </script>
+
+  <style>
+    :root {
+      --bg-main: #ffffff;
+      /* Blanco puro */
+      --bg-panel: #fafafa;
+      /* Gris sutil para panel lateral */
+      --bg-card: #ffffff;
+      /* Tarjetas limpias sobre fondo */
+      --text-main: #111111;
+      /* Negro para texto principal */
+      --text-muted: #666666;
+      /* Gris medio para textos secundarios */
+      --accent: #111111;
+      /* Negro puro para botones y nombres */
+      --accent-hover: #333333;
+      /* Gris oscuro para hover */
+      --border: #e5e5e5;
+      /* Bordes delgados y muy tenues */
+      --danger: #ff3333;
+      /* Rojo para botones críticos */
+      --success: #111111;
+      /* Unificado a negro para mantener minimalismo */
+    }
+
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .panel {
+      padding: 2rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    /* .input-panel {
+      width: 45%;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+      z-index: 10;
+    }
+
+    .feed-panel {
+      width: 55%;
+      background: var(--bg-main);
+    } */
+
+    /* Busca y reemplaza estas reglas en tu CSS actual */
+    .input-panel {
+      width: 100%;
+      /* Toma todo el ancho */
+      background: var(--bg-panel);
+      z-index: 10;
+      transition: all 0.3s ease;
+    }
+
+    .feed-panel {
+      width: 100%;
+      /* Toma todo el ancho */
+      background: var(--bg-main);
+      transition: all 0.3s ease;
+    }
+
+    /* Un pequeño botón estilizado para cambiar de vista en la parte superior */
+    .view-toggle-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: none;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .view-toggle-btn:hover {
+      background: var(--border);
+      color: var(--text-main);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .live-badge {
+      font-size: 0.8rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .admin-badge {
+      font-size: 0.8rem;
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--text-muted);
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid var(--text-main);
+    }
+
+    /* Contenedor y galería de videos */
+    .video-gallery {
+      margin-bottom: 1.5rem;
+    }
+
+    .video-wrapper {
+      margin-bottom: 1rem;
+    }
+
+    .video-title-label {
+      font-size: 0.85rem;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .question-block {
+      background: rgba(255, 255, 255, 0.02);
+      padding: 1.25rem;
+      border-radius: 8px;
+      border-left: 4px solid var(--accent);
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .question-text {
+      font-size: 1.05rem;
+      line-height: 1.5;
+      margin: 0 0 1rem 0;
+      color: var(--text-main);
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+      color: var(--text-muted);
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 0.8rem;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-main);
+      box-sizing: border-box;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+    }
+
+    button {
+      background: var(--accent);
+      color: var(--bg-main);
+      padding: 0.9rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      margin-top: 0.5rem;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-danger {
+      background: var(--bg-card);
+      color: white;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: var(--bg-main);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+    }
+
+    .feed-container {
+      flex-grow: 1;
+    }
+
+    .post-card {
+      background: var(--bg-card);
+      padding: 1.25rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .post-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      padding-right: 25px;
+    }
+
+    .post-header strong {
+      color: var(--accent);
+    }
+
+    .time {
+      color: var(--text-muted);
+    }
+
+    .post-body-segment {
+      margin-bottom: 0.75rem;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+      padding-bottom: 0.5rem;
+    }
+
+    .post-body-segment:last-child {
+      margin-bottom: 0;
+      border: none;
+      padding-bottom: 0;
+    }
+
+    .q-label {
+      font-size: 1rem;
+      color: var(--text-muted);
+      display: block;
+      font-style: italic;
+      margin-bottom: 0.2rem;
+    }
+
+    .post-body {
+      font-size: 0.75rem;
+      margin: 0;
+      line-height: 1.5;
+      color: var(--text-main);
+      white-space: pre-wrap;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 1.1rem;
+      right: 1.1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 0;
+      box-shadow: none;
+      margin: 0;
+    }
+
+    .delete-btn:hover {
+      color: var(--danger);
+    }
+
+    .empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding-top: 3rem;
+    }
+
+    .admin-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--border);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+
+    /* make responses collapsable */
+    /* --- TARJETA COMPLETA COLAPSABLE --- */
+    .collapsible-card {
+      border: none;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+    }
+
+    /* Ocultamos las flechas del sistema */
+    .collapsible-card summary {
+      list-style: none;
+      outline: none;
+    }
+
+    .collapsible-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    /* Cuando la tarjeta está CERRADA, limitamos su altura global */
+    .collapsible-card:not([open]) .post-card {
+      max-height: 250px;
+      /* Ajusta este valor en píxeles según el límite que desees */
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Degradado difuminado inferior (solo visible si está cerrada) */
+    .collapsible-card:not([open]) .post-card::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: linear-gradient(transparent, var(--bg-card));
+      pointer-events: none;
+      /* Permite hacer clic a través del degradado */
+    }
+
+    /* Botón flotante o al pie de "Read More" */
+    .card-toggle-bar {
+      display: block;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.5rem 0;
+      margin-top: 0.25rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .card-toggle-bar:hover {
+      color: var(--text-main);
+      border-color: var(--text-muted);
+    }
+
+    /* Cambiamos el texto dinámicamente según el estado de la tarjeta */
+    .collapsible-card:not([open]) .card-toggle-bar::after {
+      content: "↓ Read Full Submission";
+    }
+
+    .collapsible-card[open] .card-toggle-bar::after {
+      content: "↑ Collapse Submission";
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div v-if="!isAdmin" class="view-navigation-bar">
+      <button :class="['nav-tab', { active: currentView === 'questions' }]" @click="currentView = 'questions'">
+        ✍️ Answer Questions
+      </button>
+      <button :class="['nav-tab', { active: currentView === 'board' }]" @click="currentView = 'board'">
+        📋 Live Board ({{ posts.length }})
+      </button>
+    </div>
+
+    <div class="app-container">
+
+      <!-- =================================================== -->
+      <!-- MODO MANAGER (PROFESOR) O PREGUNTAS (ALUMNO)        -->
+      <!-- =================================================== -->
+      <!-- Si es admin, se muestra siempre. Si es alumno, solo si currentView es 'questions' -->
+      <div v-if="isAdmin || currentView === 'questions'" class="panel input-panel">
+
+        <!-- HEADER MODO PROFESOR -->
+        <h2 v-if="isAdmin">
+          Management Panel
+          <span class="admin-badge">🛠️ PROFESSOR</span>
+        </h2>
+
+        <!-- HEADER MODO ESTUDIANTE -->
+        <h2 v-else>
+          <span>Questions</span>
+          <!-- Botón para ir al Board directamente -->
+          <button @click="currentView = 'board'" class="view-toggle-btn">
+            Go to Board ➔
+          </button>
+        </h2>
+
+        <!-- HEADER MODO ESTUDIANTE -->
+        <!-- <h2 v-else>
+          <span>Questions</span>
+          <button @click="currentView = 'board'" class="view-toggle-btn">
+            Go to Board ➔
+          </button>
+        </h2> -->
+
+        <!-- Título de la sesión actual (Solo lectura para alumnos, editable para profesor) -->
+        <div class="session-header-display">
+          <h3>{{ sessionTitle || 'Loading active session...' }}</h3>
+        </div>
+
+        <!-- SECCIÓN EXCLUSIVA DEL PROFESOR: Configuración de la sesión y videos -->
+        <div v-if="isAdmin" class="admin-box">
+          <h4 style="margin-top: 0; color: var(--accent-color);">Session Control</h4>
+
+          <div class="form-group">
+            <label>MODULE/SESSION TITLE</label>
+            <input v-model="sessionTitle" type="text" />
+          </div>
+          <div class="form-group">
+            <label>URL Video 1</label>
+            <input v-model="youtubeUrls[0]" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+          </div>
+          <div class="form-group">
+            <label>URL Video 2 (Opcional)</label>
+            <input v-model="youtubeUrls[1]" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+          </div>
+          <div class="form-group">
+            <label>URL Video 3 (Opcional)</label>
+            <input v-model="youtubeUrls[2]" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+          </div>
+          <button @click="updateSessionMetadata" class="btn-success">💾 Save Session Settings</button>
+        </div>
+
+        <h3>Current Questions ({{ questions.length }})</h3>
+
+        <div v-for="(q, idx) in questions" :key="q.id" class="question-block"
+          style="border-left-color: var(--text-main);">
+          <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
+          <button @click="deleteQuestion(q.id)" class="delete-btn" title="Eliminar Pregunta">❌</button>
+        </div>
+
+        <div class="admin-box" style="border-color: var(--accent);">
+          <div class="form-group">
+            <label>➕ ADD NEW QUESTIONS TO MODULE</label>
+            <textarea v-model="newQuestionText" rows="2" placeholder="Write here..."></textarea>
+          </div>
+          <button @click="addQuestion" :disabled="!newQuestionText.trim()">Add Question</button>
+        </div>
+      </div>
+
+      <!-- =================================================== -->
+      <!-- PANEL izquierdo student workspace                 -->
+      <!-- =================================================== -->
+      <!-- =================================================== -->
+      <!-- CONFIGURACIÓN MODO ESTUDIANTE                       -->
+      <!-- =================================================== -->
+      <div v-else class="panel input-panel">
+        <!-- <h2>{{ sessionTitle }}</h2> -->
+
+        <h2>Questions</h2>
+        <!-- Galería dinámica de hasta 3 videos incorporados -->
+        <!-- <div class="video-gallery" v-if="youtubeEmbedUrls.length > 0">
+          <div v-for="(embedUrl, index) in youtubeEmbedUrls" :key="index" class="video-wrapper">
+            <div class="video-title-label">Video {{ index + 1 }}</div>
+            <div class="video-container">
+              <iframe :src="embedUrl"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+            </div>
+          </div>
+        </div> -->
+
+        <div class="form-group">
+          <label>Your Name</label>
+          <input v-model="studentName" type="text" placeholder="Ex. Jessica" @change="saveName" />
+        </div>
+
+        <div v-for="(q, idx) in questions" :key="q.id" class="question-block">
+          <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
+          <div class="form-group">
+            <!-- <label>Your Answer</label>
+            <textarea v-model="answers[q.id]" rows="3" :placeholder="'Write your answer here...'"></textarea> -->
+            <label>Your Answer (Text, links & images)</label>
+
+            <!-- Contenedor dinámico para Editor.js usando el ID de la pregunta -->
+            <div :id="'editor-' + q.id"
+              style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; color: #000;">
+            </div>
+          </div>
+        </div>
+
+        <button @click="submitAnswers" :disabled="!studentName.trim() || !allQuestionsAnswered">
+          Submit To Board
+        </button>
+      </div>
+
+      <!-- =================================================== -->
+      <!-- PANEL DERECHO (BOARD DE RESPUESTAS)                 -->
+      <!-- =================================================== -->
+      <!-- Si es admin, se muestra siempre junto al otro panel. Si es alumno, solo si currentView es 'board' -->
+      <div v-if="isAdmin || currentView === 'board'" class="panel feed-panel">
+        <h2>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <!-- Botón para regresar a las preguntas (Solo visible para alumnos) -->
+            <button v-if="!isAdmin" @click="currentView = 'questions'" class="view-toggle-btn">
+              ↩ Back to Questions
+            </button>
+            <span>Peer Submissions</span>
+          </div>
+          <span class="live-badge">● LIVE</span>
+        </h2>
+
+        <div class="feed-container">
+          <div v-if="posts.length === 0" class="empty">Waiting for submissions...</div>
+
+          <!-- Contenedor del Feed de respuestas -->
+          <div class="feed-container">
+            <!-- Estado vacío si no hay respuestas en la base de datos -->
+            <div v-if="posts.length === 0" class="empty-state">
+              🔄 Waiting for the first submission...
+            </div>
+
+            <!-- Envolvemos cada tarjeta en un details independiente -->
+            <details v-for="post in posts" :key="post.id" class="collapsible-card">
+
+              <!-- El summary contendrá la tarjeta entera y la barra inferior de toggle -->
+              <summary style="cursor: pointer;">
+
+                <!-- <div v-for="post in posts" :key="post.id" class="post-card"> -->
+                <div class="post-card">
+                  <button v-if="isAdmin || post.student_name === studentName" @click="deletePost(post.id)"
+                    class="delete-btn" title="Eliminar respuesta">❌</button>
+
+                  <div class="post-header">
+                    <strong>{{ post.student_name }}</strong>
+                    <span class="time">{{ formatTime(post.created_at) }}</span>
+                  </div>
+
+                  <div v-for="(q, idx) in questions" :key="q.id" class="post-body-segment">
+                    <!-- Solo renderiza si el estudiante guardó una respuesta para esta pregunta -->
+                    <div v-if="post.responses_json[q.id]">
+                      <span class="q-label">Q{{ idx + 1 }}: {{ q.question_text }}</span>
+
+                      <!-- Componente colapsable nativo -->
+                      <!-- <p class="post-body" style="white-space: pre-wrap;">{{ post.responses_json[q.id] }}</p> -->
+                      <!-- Iteramos sobre los bloques de Editor.js que guardamos en la base de datos -->
+                      <div class="post-body-editorjs">
+                        <div v-for="block in (post.responses_json[q.id]?.blocks || [])" :key="block.id"
+                          style="margin-bottom: 0.5rem;">
+
+                          <!-- 1. Renderizar párrafos (Actualizado para abrir links en nueva pestaña) -->
+                          <p v-if="block.type === 'paragraph'" class="post-body" v-html="formatLinks(block.data.text)"
+                            style="font-size: 0.95rem; margin: 0;">
+                          </p>
+
+                          <!-- 2. RENDERIZAR TÍTULOS (Cambiado a directivas condicionales nativas) -->
+                          <h2 v-else-if="block.type === 'header' && block.data.level === 2"
+                            v-html="formatLinks(block.data.text)"
+                            style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1.4rem;">
+                          </h2>
+                          <h3 v-else-if="block.type === 'header' && block.data.level === 3"
+                            v-html="formatLinks(block.data.text)"
+                            style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1.2rem;">
+                          </h3>
+                          <h4 v-else-if="block.type === 'header' && block.data.level === 4"
+                            v-html="formatLinks(block.data.text)"
+                            style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1rem;">
+                          </h4>
+
+                          <!-- 3. RENDERIZAR LISTAS / BULLETS (Actualizado) -->
+                          <div v-else-if="block.type === 'list'" style="margin: 0.5rem 0; padding-left: 1.2rem;">
+                            <ol v-if="block.data.style === 'ordered'" style="margin: 0; padding: 0;">
+                              <li v-for="(item, i) in block.data.items" :key="i" v-html="formatLinks(item)"
+                                style="font-size: 0.95rem; margin-bottom: 0.25rem;"></li>
+                            </ol>
+                            <ul v-else style="margin: 0; padding: 0; list-style-type: disc;">
+                              <li v-for="(item, i) in block.data.items" :key="i" v-html="formatLinks(item)"
+                                style="font-size: 0.95rem; margin-bottom: 0.25rem;"></li>
+                            </ul>
+                          </div>
+
+                          <!-- 4, Si el bloque es una imagen subida por el alumno -->
+                          <div v-else-if="block.type === 'image'" style="margin-top: 0.5rem; text-align: center;">
+                            <img :src="block.data.file.url" :alt="block.data.caption"
+                              style="max-width: 100%; border-radius: 6px; border: 1px solid var(--border);" />
+                            <small v-if="block.data.caption"
+                              style="display: block; color: var(--text-muted); font-style: italic; margin-top: 2px;">
+                              {{ block.data.caption }}
+                            </small>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- <div v-for="(ansText, qId) in post.responses_json" :key="qId" class="post-body-segment">
+              <span class="q-label">{{ getQuestionTextById(qId) }}</span>
+              <p class="post-body">{{ ansText }}</p>
+            </div> -->
+                </div>
+                <span class="read-more-toggle"></span>
+              </summary>
+            </details>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <script type="module">
+      import { createApp, ref, onMounted, onUnmounted, computed } from 'vue'
+      import { createClient } from '@supabase/supabase-js'
+
+      createApp({
+        setup() {
+          const supabaseUrl = 'https://jomqgtqtwgaxdgwywhtg.supabase.co'
+          const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvbXFndHF0d2dheGRnd3l3aHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTkyNDgsImV4cCI6MjA5ODQ5NTI0OH0.aTKt1oLBpyMMNL0S2Lcv3C1ZyOkmDcxNP2J2BgxluBg'
+          const supabase = createClient(supabaseUrl, supabaseKey)
+
+          const urlParams = new URLSearchParams(window.location.search)
+          const sessionId = ref(urlParams.get('session') || 'general')
+          const isAdmin = computed(() => urlParams.get('admin') === 'profesor123')
+
+          const sessionTitle = ref('Loading module...')
+
+          // Manejamos un array estático para los 3 inputs del admin
+          const youtubeUrls = ref(['', '', ''])
+          const youtubeEmbedUrls = ref([])
+
+          const questions = ref([])
+          const answers = ref({})
+          const editorInstances = {}
+          const posts = ref([])
+          const studentName = ref(localStorage.getItem('saved_student_name') || '')
+          const newQuestionText = ref('')
+          const currentView = ref('board') // Puede ser 'questions' o 'board'
+          let realtimeChannel = null
+
+          const saveName = () => {
+            localStorage.setItem('saved_student_name', studentName.value)
+          }
+
+          const formatYoutubeUrl = (url) => {
+            if (!url || !url.trim()) return null
+            let videoId = ''
+            if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1]?.split('?')[0]
+            else if (url.includes('v=')) videoId = url.split('v=')[1]?.split('&')[0]
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+          }
+
+          const fetchMetadataAndQuestions = async () => {
+            const { data: modData } = await supabase
+              .from('case_study_sessions')
+              .select('*')
+              .eq('id', sessionId.value)
+              .maybeSingle()
+
+            if (modData) {
+              sessionTitle.value = modData.title
+
+              // Si hay URLs guardadas, las separamos por comas. Si no, dejamos el array vacío.
+              let savedUrls = modData.youtube_url ? modData.youtube_url.split(',') : []
+              youtubeUrls.value = [savedUrls[0] || '', savedUrls[1] || '', savedUrls[2] || '']
+
+              // Procesamos los embeds válidos para los estudiantes
+              youtubeEmbedUrls.value = youtubeUrls.value
+                .map(url => formatYoutubeUrl(url))
+                .filter(embed => embed !== null)
+            } else if (isAdmin.value) {
+              sessionTitle.value = `Nuevo Módulo: ${sessionId.value}`
+              youtubeUrls.value = ['', '', '']
+              youtubeEmbedUrls.value = []
+            }
+
+            const { data: qData } = await supabase
+              .from('case_study_questions')
+              .select('*')
+              .eq('session_id', sessionId.value)
+              .order('order_index', { ascending: true })
+
+            if (qData) {
+              questions.value = qData
+              qData.forEach(q => { if (!answers.value[q.id]) answers.value[q.id] = '' })
+
+              setTimeout(() => { initEditors() }, 100)
+            }
+          }
+
+          // --- CMS DEL PROFESOR (SOPORTE MULTI-VIDEO) ---
+          const updateSessionMetadata = async () => {
+            // Filtramos links vacíos y los unimos en una sola cadena de texto separada por comas
+            const joinedUrls = youtubeUrls.value.map(u => u.trim()).filter(u => u !== '').join(',')
+
+            const { error } = await supabase
+              .from('case_study_sessions')
+              .upsert({
+                id: sessionId.value,
+                title: sessionTitle.value,
+                youtube_url: joinedUrls
+              })
+
+            if (!error) {
+              youtubeEmbedUrls.value = youtubeUrls.value
+                .map(url => formatYoutubeUrl(url))
+                .filter(embed => embed !== null)
+              alert('¡Título y videos actualizados correctamente!')
+            }
+          }
+
+          const addQuestion = async () => {
+            if (!newQuestionText.value.trim()) return
+
+            const randomId = Math.floor(100000 + Math.random() * 900000)
+            const nextIndex = questions.value.length + 1
+
+            const { error } = await supabase
+              .from('case_study_questions')
+              .insert([{
+                id: randomId,
+                session_id: sessionId.value,
+                question_text: newQuestionText.value,
+                order_index: nextIndex
+              }])
+
+            if (!error) {
+              newQuestionText.value = ''
+              await fetchMetadataAndQuestions()
+            }
+          }
+
+          const deleteQuestion = async (id) => {
+            if (confirm('Confirm you want to delete this question. Responses to this question will be deleted too.')) {
+              await supabase.from('case_study_questions').delete().eq('id', id)
+              await fetchMetadataAndQuestions()
+            }
+          }
+
+          // --- MÉTODOS DEL ALUMNO ---
+          const fetchPosts = async () => {
+            const { data, error } = await supabase
+              .from('case_study_responses_v2')
+              .select('*')
+              .eq('session_id', sessionId.value)
+              .order('created_at', { ascending: false })
+
+            if (!error) posts.value = data
+          }
+
+          // const allQuestionsAnswered = computed(() => {
+          //   if (questions.value.length === 0) return false
+          //   return questions.value.every(q => answers.value[q.id] && answers.value[q.id].trim() !== '')
+          // })
+
+          const allQuestionsAnswered = computed(() => {
+            if (questions.value.length === 0) return false
+            return questions.value.every(q => {
+              const ans = answers.value[q.id]
+              // Validamos que exista el objeto JSON generado por Editor.js y contenga bloques de contenido
+              return ans && ans.blocks && ans.blocks.length > 0
+            })
+          })
+
+          const submitAnswers = async () => {
+            if (!studentName.value.trim() || !allQuestionsAnswered.value) return
+
+            const { error } = await supabase
+              .from('case_study_responses_v2')
+              .insert([{
+                student_name: studentName.value,
+                responses_json: answers.value,
+                session_id: sessionId.value
+              }])
+
+            if (!error) {
+              // questions.value.forEach(q => { answers.value[q.id] = '' })
+              questions.value.forEach(q => {
+                answers.value[q.id] = null
+                if (editorInstances[q.id]) editorInstances[q.id].clear()
+              })
+
+              currentView.value = 'board'
+            }
+          }
+
+          const deletePost = async (id) => {
+            if (confirm('Confirm you want to delete your answer')) {
+              await supabase.from('case_study_responses_v2').delete().eq('id', id)
+            }
+          }
+
+          const getQuestionTextById = (id) => {
+            const match = questions.value.find(q => q.id == id)
+            return match ? match.question_text : 'Consigna:'
+          }
+
+          const formatTime = (dateString) => {
+            return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+
+          const uploadImageToSupabase = async (file) => {
+            try {
+              const fileExt = file.name.split('.').pop()
+              // Limpiamos el nombre del archivo de caracteres raros por si acaso
+              const cleanName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
+              const fileName = `${Date.now()}_${cleanName}.${fileExt}`
+
+              // 1. Subir el archivo a Supabase
+              const { data, error } = await supabase.storage
+                .from('imagenes-respuestas')
+                .upload(fileName, file, {
+                  cacheControl: '3600',
+                  upsert: false
+                })
+
+              if (error) {
+                console.error("Error directo de Supabase Storage:", error)
+                return { success: 0 } // Editor.js sabrá que falló y mostrará un indicador visual
+              }
+
+              // 2. Obtener la URL pública
+              const { data: { publicUrl } } = supabase.storage
+                .from('imagenes-respuestas')
+                .getPublicUrl(fileName)
+
+              // 3. RETORNO ESTRICTO PARA EDITOR.JS
+              return {
+                success: 1,
+                file: {
+                  url: publicUrl
+                }
+              }
+
+            } catch (err) {
+              console.error("Error crítico en la función de subida:", err)
+              return { success: 0 }
+            }
+          }
+
+          const initEditors = () => {
+            // Destruir editores existentes si los hubiera para evitar duplicados
+            Object.keys(editorInstances).forEach(key => {
+              if (editorInstances[key] && typeof editorInstances[key].destroy === 'function') {
+                editorInstances[key].destroy()
+              }
+              delete editorInstances[key]
+            })
+
+            // Inicializar un Editor.js para cada pregunta activa
+            questions.value.forEach(q => {
+              const containerId = `editor-${q.id}`
+
+              // Validamos que el contenedor exista en el DOM antes de montarlo
+              if (!document.getElementById(containerId)) return
+
+              editorInstances[q.id] = new EditorJS({
+                holder: containerId,
+                placeholder: 'Write your answer here, insert links, or drop images...',
+                tools: {
+                  // 1. Configuración de Títulos
+                  header: {
+                    class: Header,
+                    inlineToolbar: ['link', 'bold', 'italic'], // Permite añadir links o negritas dentro del título
+                    config: {
+                      placeholder: 'Enter a heading',
+                      levels: [2, 3, 4], // Permitimos H2, H3 y H4 (evitamos H1 para no romper el título de tu página)
+                      defaultLevel: 3
+                    }
+                  },
+                  // 2. Configuración de Listas (Bullets)
+                  list: {
+                    class: List,
+                    inlineToolbar: true, // Permite negritas, itálicas y links dentro de la lista
+                    config: {
+                      defaultStyle: 'unordered' // Inicia por defecto como lista de puntos
+                    }
+                  },
+                  // Tu configuracion existente de imagen
+                  image: {
+                    class: ImageTool,
+                    config: {
+                      // Envolvemos la función dentro de 'uploader' para que no use el POST por defecto
+                      uploader: {
+                        uploadByFile: uploadImageToSupabase
+                      }
+                    }
+                  }
+                },
+                // Sincronizamos los cambios del editor en nuestro objeto reactivo 'answers'
+                onChange: async () => {
+                  const savedData = await editorInstances[q.id].save()
+                  answers.value[q.id] = savedData
+                }
+              })
+            })
+          }
+
+          const formatLinks = (htmlText) => {
+            if (!htmlText) return '';
+            // Usamos una expresión regular para inyectar target="_blank" y rel="noopener noreferrer" a todas las etiquetas <a>
+            return htmlText.replace(/<a\b([^>]*)/gi, (match, p1) => {
+              if (p1.includes('target=')) return match; // Si ya tiene target por alguna razón, no lo duplica
+              return `<a target="_blank" rel="noopener noreferrer"${p1}`;
+            });
+          }
+
+          onMounted(async () => {
+            await fetchMetadataAndQuestions()
+            await fetchPosts()
+
+            realtimeChannel = supabase
+              .channel(`public:public:case_study_responses_v2:${sessionId.value}`)
+              .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'case_study_responses_v2',
+                filter: `session_id=eq.${sessionId.value}`
+              }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                  if (!posts.value.some(p => p.id === payload.new.id)) {
+                    posts.value.unshift(payload.new)
+                  }
+                } else if (payload.eventType === 'DELETE') {
+                  const targetId = payload.old.id;
+                  posts.value = posts.value.filter(p => p.id != targetId)
+                }
+              })
+              .subscribe()
+          })
+
+          onUnmounted(() => {
+            if (realtimeChannel) supabase.removeChannel(realtimeChannel)
+          })
+
+          return {
+            studentName, sessionTitle, youtubeUrls, youtubeEmbedUrls,
+            questions, answers, posts, isAdmin, newQuestionText, allQuestionsAnswered,
+            submitAnswers, deletePost, getQuestionTextById, formatTime, saveName,
+            updateSessionMetadata, addQuestion, deleteQuestion, formatLinks, currentView
+          }
+        }
+      }).mount('#app')
+    </script>
+</body>
+
+</html>
