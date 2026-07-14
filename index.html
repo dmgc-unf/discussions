@@ -72,6 +72,7 @@
       display: flex;
       flex-direction: column;
       overflow-y: auto;
+      height: 100%;
     }
 
     /* .input-panel {
@@ -94,6 +95,7 @@
       background: var(--bg-panel);
       z-index: 10;
       transition: all 0.3s ease;
+      overflow-y: auto;
     }
 
     .feed-panel {
@@ -101,6 +103,7 @@
       /* Toma todo el ancho */
       background: var(--bg-main);
       transition: all 0.3s ease;
+      overflow-y: auto;
     }
 
     /* Un pequeño botón estilizado para cambiar de vista en la parte superior */
@@ -536,7 +539,7 @@
           <div class="form-group"
             style="background: var(--bg-main); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.5rem;">
             <label style="color: var(--accent); font-weight: 700;">👤 Your Name</label>
-            <input v-model="studentName" type="text" placeholder="Ex. Jessica Miller" @change="saveName" />
+            <input v-model="studentName" type="text" placeholder="Ex. Jessica" @change="saveName" />
           </div>
 
           <div v-for="(q, idx) in questions" :key="q.id" class="question-block">
