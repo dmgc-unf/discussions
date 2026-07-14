@@ -181,6 +181,7 @@
       border-left: 4px solid var(--accent);
       margin-bottom: 1.5rem;
       position: relative;
+
     }
 
     .question-text {
@@ -431,10 +432,26 @@
       max-width: 90% !important;
     }
 
-    /* 3. Opcional: Elimina márgenes internos si quieres un ajuste aún más estricto */
-    /* .codex-editor__redactor {
-      padding-bottom: 100px !important;
-    } */
+    /* Reduce el alto mínimo del área de escritura */
+    .codex-editor__redactor {
+      min-height: 10rem !important;
+      /* Ajusta este valor (por ejemplo, 60px o 80px) según qué tan bajo lo quieras */
+      padding-bottom: 20px !important;
+      /* Reduce el espacio vacío que queda al fondo del editor */
+    }
+
+    /* Opcional: Si estás usando bloques de párrafo simples, reduce su margen interno */
+    .ce-paragraph {
+      padding: 5px 0 !important;
+    }
+
+    /* Limita el tamaño del contenedor de la imagen cargada */
+    img {
+      max-width: 15% !important;
+      /* Ajusta el tamaño al 30% del contenedor padre */
+      margin: 0 auto !important;
+      /* Centra la imagen horizontalmente */
+    }
   </style>
 </head>
 
@@ -529,7 +546,7 @@
                 style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; color: #000; min-height: 120px;">
               </div>
             </div>
-            <button @click="addQuestion"  style="width: 100%;">Add Question</button>
+            <button @click="addQuestion" style="width: 100%;">Add Question</button>
           </div>
         </div>
 
@@ -714,7 +731,7 @@
 
   <!-- SCRIPT DE CONFIGURACIÓN VUE (Híbrido para preguntas del profesor) -->
   <script type="module">
-    import { createApp, ref, onMounted, onUnmounted, computed } from 'vue'
+    import { createApp, ref, onMounted, onUnmounted, computed, watch } from 'vue'
     import { createClient } from '@supabase/supabase-js'
 
     createApp({
@@ -1046,10 +1063,25 @@
               }
             })
             .subscribe()
+            // NUEVO: Escuchar cambios de pestaña para regenerar los editores del estudiante
+          watch(currentView, (newView) => {
+            if (!isAdmin.value && newView === 'questions') {
+              // Esperamos un tick del DOM para que los divs con id="editor-xxx" existan de nuevo
+              setTimeout(() => {
+                initStudentEditors()
+              }, 100)
+            }
+          })
         })
-
+        
         onUnmounted(() => {
           if (realtimeChannel) supabase.removeChannel(realtimeChannel)
+          // Destruye los editores activos al desmontar
+          Object.keys(editorInstances).forEach(key => {
+            if (editorInstances[key] && typeof editorInstances[key].destroy === 'function') {
+              editorInstances[key].destroy()
+            }
+          })
         })
 
         return {
