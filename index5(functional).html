@@ -22,6 +22,8 @@
         "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
       }
     }
+
+    
   </script>
 
   <style>
@@ -52,7 +54,7 @@
     html {
       margin: 0;
       padding: 0;
-      min-height: 100vh;
+      height: 100vh;
       background-color: var(--bg-main);
       color: var(--text-main);
       font-family: 'Segoe UI', Roboto, Arial, sans-serif;
@@ -61,8 +63,7 @@
 
     .app-container {
       display: flex;
-      min-height: 100vh;
-      width: 100%;
+      height: 100vh;
     }
 
     .panel {
@@ -71,12 +72,27 @@
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      height: auto;
-      min-height: 100%;
+      /* height: 100%; */
     }
 
+    /* .input-panel {
+      width: 45%;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+      z-index: 10;
+    }
+
+    .feed-panel {
+      width: 55%;
+      background: var(--bg-main);
+    } */
+
+    /* Busca y reemplaza estas reglas en tu CSS actual */
     .input-panel {
       width: 100%;
+      height: 80vh;
+      /* Toma todo el ancho */
       background: var(--bg-panel);
       z-index: 10;
       transition: all 0.3s ease;
@@ -85,11 +101,14 @@
 
     .feed-panel {
       width: 100%;
+      height: 80vh;
+      /* Toma todo el ancho */
       background: var(--bg-main);
       transition: all 0.3s ease;
       overflow-y: auto;
     }
 
+    /* Un pequeño botón estilizado para cambiar de vista en la parte superior */
     .view-toggle-btn {
       background: transparent;
       color: var(--text-muted);
@@ -139,6 +158,7 @@
       border: 1px solid var(--text-main);
     }
 
+    /* Contenedor y galería de videos */
     .video-gallery {
       margin-bottom: 1.5rem;
     }
@@ -351,6 +371,8 @@
       margin-bottom: 1.5rem;
     }
 
+    /* make responses collapsable */
+    /* --- TARJETA COMPLETA COLAPSABLE --- */
     .collapsible-card {
       border: none;
       padding: 0;
@@ -358,6 +380,7 @@
       background: transparent;
     }
 
+    /* Ocultamos las flechas del sistema */
     .collapsible-card summary {
       list-style: none;
       outline: none;
@@ -367,12 +390,15 @@
       display: none;
     }
 
+    /* Cuando la tarjeta está CERRADA, limitamos su altura global */
     .collapsible-card:not([open]) .post-card {
       max-height: 250px;
+      /* Ajusta este valor en píxeles según el límite que desees */
       overflow: hidden;
       position: relative;
     }
 
+    /* Degradado difuminado inferior (solo visible si está cerrada) */
     .collapsible-card:not([open]) .post-card::after {
       content: "";
       position: absolute;
@@ -382,8 +408,10 @@
       height: 60px;
       background: linear-gradient(transparent, var(--bg-card));
       pointer-events: none;
+      /* Permite hacer clic a través del degradado */
     }
 
+    /* Botón flotante o al pie de "Read More" */
     .card-toggle-bar {
       display: block;
       text-align: center;
@@ -404,6 +432,7 @@
       border-color: var(--text-muted);
     }
 
+    /* Cambiamos el texto dinámicamente según el estado de la tarjeta */
     .collapsible-card:not([open]) .card-toggle-bar::after {
       content: "↓ Read Full Submission";
     }
@@ -411,28 +440,6 @@
     .collapsible-card[open] .card-toggle-bar::after {
       content: "↑ Collapse Submission";
     }
-
-    /* Regla para homogeneizar la visualización de preguntas enriquecidas en la vista de edición */
-    .rendered-question-block {
-      font-size: 1.05rem;
-      line-height: 1.5;
-      color: var(--text-main);
-    }
-
-    /* 1. Hace que los bloques de contenido usen todo el ancho disponible */
-    .ce-block__content {
-      max-width: 90% !important;
-    }
-
-    /* 2. Hace que la barra de herramientas (toolbar) también se alinee al ancho completo */
-    .ce-toolbar__content {
-      max-width: 90% !important;
-    }
-
-    /* 3. Opcional: Elimina márgenes internos si quieres un ajuste aún más estricto */
-    /* .codex-editor__redactor {
-      padding-bottom: 100px !important;
-    } */
   </style>
 </head>
 
@@ -455,6 +462,7 @@
       <!-- =================================================== -->
       <!-- PANEL IZQUIERDO: FORMULARIO O CONTROL CMS           -->
       <!-- =================================================== -->
+      <!-- Solo se renderiza si es el administrador o si el alumno se encuentra en la pestaña 'questions' -->
       <div v-if="isAdmin || currentView === 'questions'" class="panel input-panel">
 
         <!-- SUB-PANEL: VISTA EXCLUSIVA DEL PROFESOR (CMS) -->
@@ -493,41 +501,16 @@
           <h3>Current Questions ({{ questions.length }})</h3>
           <div v-for="(q, idx) in questions" :key="q.id" class="question-block"
             style="border-left-color: var(--text-main);">
-            <div style="padding-right: 25px;">
-              <strong>Q{{ idx + 1 }}:</strong>
-
-              <!-- RENDERIZADO HÍBRIDO DE PREGUNTAS (ADMIN) -->
-              <div v-if="isJson(q.question_text)" class="rendered-question-block" style="margin-top: 0.5rem;">
-                <div v-for="block in JSON.parse(q.question_text).blocks" :key="block.id" style="margin-bottom: 0.5rem;">
-                  <p v-if="block.type === 'paragraph'" v-html="formatLinks(block.data.text)"
-                    style="margin: 0; font-size: 0.95rem;"></p>
-                  <h3 v-else-if="block.type === 'header'" v-html="formatLinks(block.data.text)"
-                    style="margin: 0.5rem 0 0.25rem 0; font-size: 1.1rem; font-weight: bold;"></h3>
-                  <div v-else-if="block.type === 'list'" style="margin: 0.25rem 0; padding-left: 1rem;">
-                    <ul style="margin: 0; padding: 0; list-style-type: disc;">
-                      <li v-for="(item, i) in block.data.items" :key="i" v-html="formatLinks(item)"
-                        style="font-size: 0.9rem;"></li>
-                    </ul>
-                  </div>
-                  <div v-else-if="block.type === 'image'" style="margin-top: 0.25rem; text-align: center;">
-                    <img :src="block.data.file.url" style="max-width: 150px; border-radius: 4px;" />
-                  </div>
-                </div>
-              </div>
-              <p v-else class="question-text" style="display: inline; margin-left: 0.5rem;">{{ q.question_text }}</p>
-            </div>
+            <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
             <button @click="deleteQuestion(q.id)" class="delete-btn" title="Eliminar Pregunta">❌</button>
           </div>
 
           <div class="admin-box" style="border-color: var(--accent); margin-top: 1.5rem;">
             <div class="form-group">
-              <label>➕ ADD NEW QUESTIONS TO MODULE (Rich Text)</label>
-              <!-- Contenedor para el Editor.js del administrador -->
-              <div id="editor-new-question"
-                style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; color: #000; min-height: 120px;">
-              </div>
+              <label>➕ ADD NEW QUESTIONS TO MODULE</label>
+              <textarea v-model="newQuestionText" rows="2" placeholder="Write here..."></textarea>
             </div>
-            <button @click="addQuestion" style="width: 100%;">Add Question</button>
+            <button @click="addQuestion" :disabled="!newQuestionText.trim()" style="width: 100%;">Add Question</button>
           </div>
         </div>
 
@@ -544,6 +527,7 @@
             <h3 style="margin-top: 0; margin-bottom: 1.5rem; color: var(--accent);">{{ sessionTitle }}</h3>
           </div>
 
+          <!-- Galería dinámica de videos incorporados -->
           <div class="video-gallery" v-if="youtubeEmbedUrls.length > 0">
             <div v-for="(embedUrl, index) in youtubeEmbedUrls" :key="index" class="video-wrapper">
               <div class="video-title-label">Video {{ index + 1 }}</div>
@@ -562,38 +546,10 @@
           </div>
 
           <div v-for="(q, idx) in questions" :key="q.id" class="question-block">
-            <div class="question-text">
-              <strong>Q{{ idx + 1 }}:</strong>
-
-              <!-- RENDERIZADO HÍBRIDO DE PREGUNTAS (ESTUDIANTE) -->
-              <div v-if="isJson(q.question_text)" class="rendered-question-block" style="margin-top: 0.5rem;">
-                <div v-for="block in JSON.parse(q.question_text).blocks" :key="block.id" style="margin-bottom: 0.5rem;">
-                  <p v-if="block.type === 'paragraph'" v-html="formatLinks(block.data.text)"
-                    style="margin: 0; font-size: 1rem;"></p>
-                  <h3 v-else-if="block.type === 'header'" v-html="formatLinks(block.data.text)"
-                    style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent);"></h3>
-                  <div v-else-if="block.type === 'list'" style="margin: 0.5rem 0; padding-left: 1.2rem;">
-                    <ol v-if="block.data.style === 'ordered'" style="margin: 0; padding: 0;">
-                      <li v-for="(item, i) in block.data.items" :key="i" v-html="formatLinks(item)"></li>
-                    </ol>
-                    <ul v-else style="margin: 0; padding: 0; list-style-type: disc;">
-                      <li v-for="(item, i) in block.data.items" :key="i" v-html="formatLinks(item)"></li>
-                    </ul>
-                  </div>
-                  <div v-else-if="block.type === 'image'" style="margin-top: 0.5rem; text-align: center;">
-                    <img :src="block.data.file.url" :alt="block.data.caption"
-                      style="max-width: 100%; border-radius: 6px;" />
-                    <small v-if="block.data.caption"
-                      style="display: block; color: var(--text-muted); font-style: italic;">{{ block.data.caption
-                      }}</small>
-                  </div>
-                </div>
-              </div>
-              <span v-else style="margin-left: 0.5rem;">{{ q.question_text }}</span>
-            </div>
-
+            <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
             <div class="form-group">
-              <!-- <label>Your Answer (Text, links & images)</label> -->
+              <label>Your Answer (Text, links & images)</label>
+              <!-- Contenedor dinámico único para Editor.js -->
               <div :id="'editor-' + q.id"
                 style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; color: #000;">
               </div>
@@ -601,7 +557,7 @@
           </div>
 
           <button @click="submitAnswers" :disabled="!studentName.trim() || !allQuestionsAnswered"
-            style="width: 100%; margin-bottom: 3rem; padding: 1rem;">
+            style="width: 100%;">
             🚀 Submit To Board
           </button>
         </div>
@@ -611,9 +567,10 @@
       <!-- =================================================== -->
       <!-- PANEL DERECHO: LIVE BOARD DE RESPUESTAS             -->
       <!-- =================================================== -->
+      <!-- Se muestra de forma fija si eres admin o si el alumno activa la vista 'board' -->
       <div v-if="isAdmin || currentView === 'board'" class="panel feed-panel">
         <h2>
-          <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 1rem;">            
             <span>Activity Board</span>
             <button v-if="!isAdmin" @click="currentView = 'questions'" class="view-toggle-btn">
               ↩ Back to Questions
@@ -638,25 +595,20 @@
 
                 <div v-for="(q, idx) in questions" :key="q.id" class="post-body-segment">
                   <div v-if="post.responses_json[q.id]">
-
-                    <!-- RENDERIZADO HÍBRIDO DEL ENCABEZADO DE LA PREGUNTA EN EL CARD -->
-                    <span class="q-label">
-                      Q{{ idx + 1 }} -
-                      <template v-if="isJson(q.question_text)">
-                        <span v-html="getFirstParagraphFromBlocks(q.question_text)"></span>
-                      </template>
-                      <template v-else>
-                        {{ q.question_text }}
-                      </template>
-                    </span>
+                    <span class="q-label">Q{{ idx + 1 }} - {{ q.question_text }}</span>
 
                     <div class="post-body-editorjs">
+
                       <!-- CASO 1: FORMATO NUEVO (Editor.js con bloques estructurados) -->
                       <template v-if="post.responses_json[q.id] && post.responses_json[q.id].blocks">
                         <div v-for="block in post.responses_json[q.id].blocks" :key="block.id"
                           style="margin-bottom: 0.5rem;">
+
+                          <!-- Párrafos -->
                           <p v-if="block.type === 'paragraph'" class="post-body" v-html="formatLinks(block.data.text)"
                             style="font-size: 0.95rem; margin: 0;"></p>
+
+                          <!-- Títulos H2, H3, H4 -->
                           <h2 v-else-if="block.type === 'header' && block.data.level === 2"
                             v-html="formatLinks(block.data.text)"
                             style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1.4rem;">
@@ -669,6 +621,8 @@
                             v-html="formatLinks(block.data.text)"
                             style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1rem;">
                           </h4>
+
+                          <!-- Listas -->
                           <div v-else-if="block.type === 'list'" style="margin: 0.5rem 0; padding-left: 1.2rem;">
                             <ol v-if="block.data.style === 'ordered'" style="margin: 0; padding: 0;">
                               <li v-for="(item, i) in block.data.items" :key="i" v-html="formatLinks(item)"
@@ -679,6 +633,8 @@
                                 style="font-size: 0.95rem; margin-bottom: 0.25rem;"></li>
                             </ul>
                           </div>
+
+                          <!-- Imágenes multimedia -->
                           <div v-else-if="block.type === 'image'" style="margin-top: 0.5rem; text-align: center;">
                             <img :src="block.data.file.url" :alt="block.data.caption"
                               style="max-width: 100%; border-radius: 6px; border: 1px solid var(--border);" />
@@ -686,17 +642,19 @@
                               style="display: block; color: var(--text-muted); font-style: italic; margin-top: 2px;">{{
                               block.data.caption }}</small>
                           </div>
+
                         </div>
                       </template>
 
                       <!-- CASO 2: FORMATO ANTIGUO (Compatibilidad con texto plano) -->
                       <template v-else-if="post.responses_json[q.id]">
+                        <!-- Si es un string directo o un formato viejo, lo muestra como texto plano respetando saltos de línea -->
                         <p class="post-body"
                           v-html="formatLinks(typeof post.responses_json[q.id] === 'string' ? post.responses_json[q.id] : JSON.stringify(post.responses_json[q.id]))"
                           style="font-size: 0.95rem; margin: 0; white-space: pre-wrap;"></p>
                       </template>
-                    </div>
 
+                    </div>
                   </div>
                 </div>
 
@@ -709,7 +667,7 @@
     </div>
   </div>
 
-  <!-- SCRIPT DE CONFIGURACIÓN VUE (Híbrido para preguntas del profesor) -->
+  <!-- SCRIPT DE CONFIGURACIÓN VUE (Se mantiene exactamente igual al tuyo) -->
   <script type="module">
     import { createApp, ref, onMounted, onUnmounted, computed } from 'vue'
     import { createClient } from '@supabase/supabase-js'
@@ -730,12 +688,13 @@
         const questions = ref([])
         const answers = ref({})
         const editorInstances = {}
-        let adminQuestionEditor = null // Instancia del editor del administrador
         const posts = ref([])
         const studentName = ref(localStorage.getItem('saved_student_name') || '')
         const newQuestionText = ref('')
 
+        // RECOMENDACIÓN: Cambia esto a 'questions' si quieres que el estudiante empiece viendo el cuestionario por defecto
         const currentView = ref('questions')
+
         let realtimeChannel = null
 
         const saveName = () => {
@@ -779,14 +738,7 @@
           if (qData) {
             questions.value = qData
             qData.forEach(q => { if (!answers.value[q.id]) answers.value[q.id] = '' })
-
-            // Re-inicializar editores de los estudiantes si no somos admin
-            if (!isAdmin.value) {
-              setTimeout(() => { initStudentEditors() }, 100)
-            } else {
-              // Si somos admin, inicializamos el editor creador de preguntas
-              setTimeout(() => { initAdminEditor() }, 100)
-            }
+            setTimeout(() => { initEditors() }, 100)
           }
         }
 
@@ -808,35 +760,23 @@
           }
         }
 
-        // AGREGAR PREGUNTA USANDO EL EDITOR ENRIQUECIDO
         const addQuestion = async () => {
-          if (!adminQuestionEditor) return
-
-          const savedData = await adminQuestionEditor.save()
-          // Verificamos si realmente el editor tiene contenido escrito antes de guardar
-          if (!savedData.blocks || savedData.blocks.length === 0) {
-            alert('Por favor, escribe una pregunta antes de guardarla.')
-            return
-          }
-
+          if (!newQuestionText.value.trim()) return
           const randomId = Math.floor(100000 + Math.random() * 900000)
           const nextIndex = questions.value.length + 1
 
-          // Guardamos el objeto JSON completo convertido en string
           const { error } = await supabase
             .from('case_study_questions')
             .insert([{
               id: randomId,
               session_id: sessionId.value,
-              question_text: JSON.stringify(savedData),
+              question_text: newQuestionText.value,
               order_index: nextIndex
             }])
 
           if (!error) {
-            adminQuestionEditor.clear()
+            newQuestionText.value = ''
             await fetchMetadataAndQuestions()
-          } else {
-            alert('Error al guardar la pregunta: ' + error.message)
           }
         }
 
@@ -916,39 +856,7 @@
           }
         }
 
-        // INICIALIZA EL EDITOR DEL ADMINISTRADOR
-        const initAdminEditor = () => {
-          if (adminQuestionEditor && typeof adminQuestionEditor.destroy === 'function') {
-            adminQuestionEditor.destroy()
-          }
-
-          const containerId = 'editor-new-question'
-          if (!document.getElementById(containerId)) return
-
-          adminQuestionEditor = new EditorJS({
-            holder: containerId,
-            placeholder: 'Escribe tu pregunta enriquecida aquí (agrega listas, títulos o imágenes para tus alumnos)...',
-            tools: {
-              header: {
-                class: Header,
-                inlineToolbar: ['link', 'bold', 'italic'],
-                config: { levels: [2, 3, 4], defaultLevel: 3 }
-              },
-              list: {
-                class: List,
-                inlineToolbar: true,
-                config: { defaultStyle: 'unordered' }
-              },
-              image: {
-                class: ImageTool,
-                config: { uploader: { uploadByFile: uploadImageToSupabase } }
-              }
-            }
-          })
-        }
-
-        // INICIALIZA LOS EDITORES DE LOS ESTUDIANTES
-        const initStudentEditors = () => {
+        const initEditors = () => {
           Object.keys(editorInstances).forEach(key => {
             if (editorInstances[key] && typeof editorInstances[key].destroy === 'function') {
               editorInstances[key].destroy()
@@ -995,33 +903,6 @@
           });
         }
 
-        // FUNCIONES AUXILIARES PARA EL RENDERIZADO HÍBRIDO DE PREGUNTAS
-        const isJson = (str) => {
-          try {
-            const obj = JSON.parse(str);
-            return !!(obj && typeof obj === 'object' && obj.blocks);
-          } catch (e) {
-            return false;
-          }
-        }
-
-        // Extrae el primer párrafo del JSON de la pregunta para mostrar un resumen legible en el Activity Board
-        const getFirstParagraphFromBlocks = (strJson) => {
-          try {
-            const obj = JSON.parse(strJson);
-            if (obj && obj.blocks) {
-              const paragraphBlock = obj.blocks.find(b => b.type === 'paragraph');
-              if (paragraphBlock) return paragraphBlock.data.text;
-              const headerBlock = obj.blocks.find(b => b.type === 'header');
-              if (headerBlock) return headerBlock.data.text;
-              return 'Pregunta Multimedia (Ver detalles)';
-            }
-          } catch (e) {
-            return 'Pregunta cargada...';
-          }
-          return 'Pregunta cargada...';
-        }
-
         onMounted(async () => {
           await fetchMetadataAndQuestions()
           await fetchPosts()
@@ -1053,12 +934,9 @@
           studentName, sessionTitle, youtubeUrls, youtubeEmbedUrls,
           questions, answers, posts, isAdmin, newQuestionText, allQuestionsAnswered,
           submitAnswers, deletePost, formatTime, saveName,
-          updateSessionMetadata, addQuestion, deleteQuestion, formatLinks, currentView,
-          isJson, getFirstParagraphFromBlocks
+          updateSessionMetadata, addQuestion, deleteQuestion, formatLinks, currentView
         }
       }
     }).mount('#app')
   </script>
 </body>
-
-</html>
