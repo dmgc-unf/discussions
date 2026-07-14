@@ -54,7 +54,8 @@
     html {
       margin: 0;
       padding: 0;
-      height: 100vh;
+      /* height: 100vh; */
+      min-height: 100vh;
       background-color: var(--bg-main);
       color: var(--text-main);
       font-family: 'Segoe UI', Roboto, Arial, sans-serif;
@@ -63,7 +64,8 @@
 
     .app-container {
       display: flex;
-      height: 100vh;
+      min-height: 100vh;
+      width: 100%;
     }
 
     .panel {
@@ -72,7 +74,8 @@
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      /* height: 100%; */
+      height: auto;
+      min-height: 100%;
     }
 
     /* .input-panel {
@@ -554,7 +557,7 @@
           </div>
 
           <button @click="submitAnswers" :disabled="!studentName.trim() || !allQuestionsAnswered"
-            style="width: 100%; margin-top: 1rem;">
+            style="width: 100%; margin-top: 1.5rem; margin-bottom: 3rem; padding: 1rem;">
             🚀 Submit To Board
           </button>
         </div>
