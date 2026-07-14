@@ -751,32 +751,44 @@
         }
 
         const uploadImageToSupabase = async (file) => {
-          const fileExt = file.name.split('.').pop()
-          const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`
+          try {
+            const fileExt = file.name.split('.').pop()
+            // Limpiamos el nombre del archivo de caracteres raros por si acaso
+            const cleanName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
+            const fileName = `${Date.now()}_${cleanName}.${fileExt}`
 
-          // Subimos el binario directamente al bucket de archivos
-          const { data, error } = await supabase.storage
-            .from('imagenes-respuestas')
-            .upload(fileName, file)
+            // 1. Subir el archivo a Supabase
+            const { data, error } = await supabase.storage
+              .from('imagenes-respuestas')
+              .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+              })
 
-          if (error) {
-            console.error("Error al subir archivo a Storage:", error)
+            if (error) {
+              console.error("Error directo de Supabase Storage:", error)
+              return { success: 0 } // Editor.js sabrá que falló y mostrará un indicador visual
+            }
+
+            // 2. Obtener la URL pública
+            const { data: { publicUrl } } = supabase.storage
+              .from('imagenes-respuestas')
+              .getPublicUrl(fileName)
+
+            // 3. RETORNO ESTRICTO PARA EDITOR.JS
+            return {
+              success: 1,
+              file: {
+                url: publicUrl
+              }
+            }
+
+          } catch (err) {
+            console.error("Error crítico en la función de subida:", err)
             return { success: 0 }
           }
-
-          // Generamos la URL pública que Editor.js incrustará en el bloque de imagen
-          const { data: { publicUrl } } = supabase.storage
-            .from('imagenes-respuestas')
-            .getPublicUrl(fileName)
-
-          return {
-            success: 1,
-            file: {
-              url: publicUrl
-            }
-          }
         }
-
+        
         const initEditors = () => {
           // Destruir editores existentes si los hubiera para evitar duplicados
           Object.keys(editorInstances).forEach(key => {
