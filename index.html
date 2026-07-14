@@ -444,10 +444,10 @@
     <div v-if="!isAdmin" class="view-navigation-bar"
       style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-panel); border-bottom: 1px solid var(--border);">
       <button :class="['nav-tab', { active: currentView === 'questions' }]" @click="currentView = 'questions'">
-        ✍️ Answer Questions
+        ✍️ Activity Questions
       </button>
       <button :class="['nav-tab', { active: currentView === 'board' }]" @click="currentView = 'board'">
-        📋 Live Board ({{ posts.length }})
+        📋 Activity Board ({{ posts.length }})
       </button>
     </div>
 
@@ -511,7 +511,7 @@
         <!-- SUB-PANEL: VISTA EXCLUSIVA DEL ESTUDIANTE (CONTRALOR DE RESPUESTAS) -->
         <div v-else>
           <h2>
-            <span>Classroom Questions</span>
+            <span>Activity Questions</span>
             <button @click="currentView = 'board'" class="view-toggle-btn">
               Go to Board ➔
             </button>
@@ -568,7 +568,7 @@
             <button v-if="!isAdmin" @click="currentView = 'questions'" class="view-toggle-btn">
               ↩ Back to Questions
             </button>
-            <span>Peer Submissions</span>
+            <span>Activity Board</span>
           </div>
           <span class="live-badge">● LIVE</span>
         </h2>
