@@ -91,6 +91,7 @@
     /* Busca y reemplaza estas reglas en tu CSS actual */
     .input-panel {
       width: 100%;
+      height: 80vh;
       /* Toma todo el ancho */
       background: var(--bg-panel);
       z-index: 10;
@@ -100,6 +101,7 @@
 
     .feed-panel {
       width: 100%;
+      height: 80vh;
       /* Toma todo el ancho */
       background: var(--bg-main);
       transition: all 0.3s ease;
@@ -242,7 +244,6 @@
 
     button {
       background: var(--accent);
-      height: 3.5rem;
       color: var(--bg-main);
       padding: 0.9rem;
       border: none;
@@ -556,7 +557,7 @@
           </div>
 
           <button @click="submitAnswers" :disabled="!studentName.trim() || !allQuestionsAnswered"
-            style="width: 100%; ">
+            style="width: 100%;">
             🚀 Submit To Board
           </button>
         </div>
