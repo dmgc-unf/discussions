@@ -439,9 +439,10 @@
 
 <body>
   <div id="app">
-    
+
     <!-- BARRA DE NAVEGACIÓN SUPERIOR (SOLO ALUMNOS) -->
-    <div v-if="!isAdmin" class="view-navigation-bar" style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-panel); border-bottom: 1px solid var(--border);">
+    <div v-if="!isAdmin" class="view-navigation-bar"
+      style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-panel); border-bottom: 1px solid var(--border);">
       <button :class="['nav-tab', { active: currentView === 'questions' }]" @click="currentView = 'questions'">
         ✍️ Answer Questions
       </button>
@@ -487,11 +488,13 @@
               <label>URL Video 3 (Opcional)</label>
               <input v-model="youtubeUrls[2]" type="text" placeholder="https://www.youtube.com/watch?v=..." />
             </div>
-            <button @click="updateSessionMetadata" class="btn-success" style="width: 100%;">💾 Save Session Settings</button>
+            <button @click="updateSessionMetadata" class="btn-success" style="width: 100%;">💾 Save Session
+              Settings</button>
           </div>
 
           <h3>Current Questions ({{ questions.length }})</h3>
-          <div v-for="(q, idx) in questions" :key="q.id" class="question-block" style="border-left-color: var(--text-main);">
+          <div v-for="(q, idx) in questions" :key="q.id" class="question-block"
+            style="border-left-color: var(--text-main);">
             <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
             <button @click="deleteQuestion(q.id)" class="delete-btn" title="Eliminar Pregunta">❌</button>
           </div>
@@ -523,12 +526,15 @@
             <div v-for="(embedUrl, index) in youtubeEmbedUrls" :key="index" class="video-wrapper">
               <div class="video-title-label">Video {{ index + 1 }}</div>
               <div class="video-container">
-                <iframe :src="embedUrl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <iframe :src="embedUrl"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen></iframe>
               </div>
             </div>
           </div>
 
-          <div class="form-group" style="background: var(--bg-main); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.5rem;">
+          <div class="form-group"
+            style="background: var(--bg-main); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.5rem;">
             <label style="color: var(--accent); font-weight: 700;">👤 Your Name</label>
             <input v-model="studentName" type="text" placeholder="Ex. Jessica Miller" @change="saveName" />
           </div>
@@ -538,11 +544,14 @@
             <div class="form-group">
               <label>Your Answer (Text, links & images)</label>
               <!-- Contenedor dinámico único para Editor.js -->
-              <div :id="'editor-' + q.id" style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; color: #000;"></div>
+              <div :id="'editor-' + q.id"
+                style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; color: #000;">
+              </div>
             </div>
           </div>
 
-          <button @click="submitAnswers" :disabled="!studentName.trim() || !allQuestionsAnswered" style="width: 100%; margin-top: 1rem;">
+          <button @click="submitAnswers" :disabled="!studentName.trim() || !allQuestionsAnswered"
+            style="width: 100%; margin-top: 1rem;">
             🚀 Submit To Board
           </button>
         </div>
@@ -570,7 +579,8 @@
           <details v-for="post in posts" :key="post.id" class="collapsible-card" open>
             <summary style="cursor: pointer;">
               <div class="post-card">
-                <button v-if="isAdmin || post.student_name === studentName" @click="deletePost(post.id)" class="delete-btn" title="Eliminar respuesta">❌</button>
+                <button v-if="isAdmin || post.student_name === studentName" @click="deletePost(post.id)"
+                  class="delete-btn" title="Eliminar respuesta">❌</button>
 
                 <div class="post-header">
                   <strong>{{ post.student_name }}</strong>
@@ -582,33 +592,62 @@
                     <span class="q-label">Q{{ idx + 1 }} - {{ q.question_text }}</span>
 
                     <div class="post-body-editorjs">
-                      <div v-for="block in (post.responses_json[q.id]?.blocks || [])" :key="block.id" style="margin-bottom: 0.5rem;">
-                        
-                        <!-- Párrafos -->
-                        <p v-if="block.type === 'paragraph'" class="post-body" v-html="formatLinks(block.data.text)" style="font-size: 0.95rem; margin: 0;"></p>
 
-                        <!-- Títulos H2, H3, H4 -->
-                        <h2 v-else-if="block.type === 'header' && block.data.level === 2" v-html="formatLinks(block.data.text)" style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1.4rem;"></h2>
-                        <h3 v-else-if="block.type === 'header' && block.data.level === 3" v-html="formatLinks(block.data.text)" style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1.2rem;"></h3>
-                        <h4 v-else-if="block.type === 'header' && block.data.level === 4" v-html="formatLinks(block.data.text)" style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1rem;"></h4>
+                      <!-- CASO 1: FORMATO NUEVO (Editor.js con bloques estructurados) -->
+                      <template v-if="post.responses_json[q.id] && post.responses_json[q.id].blocks">
+                        <div v-for="block in post.responses_json[q.id].blocks" :key="block.id"
+                          style="margin-bottom: 0.5rem;">
 
-                        <!-- Listas organizadas y desorganizadas -->
-                        <div v-else-if="block.type === 'list'" style="margin: 0.5rem 0; padding-left: 1.2rem;">
-                          <ol v-if="block.data.style === 'ordered'" style="margin: 0; padding: 0;">
-                            <li v-for="(item, i) in block.data.items" :key="i" v-html="formatLinks(item)" style="font-size: 0.95rem; margin-bottom: 0.25rem;"></li>
-                          </ol>
-                          <ul v-else style="margin: 0; padding: 0; list-style-type: disc;">
-                            <li v-for="(item, i) in block.data.items" :key="i" v-html="formatLinks(item)" style="font-size: 0.95rem; margin-bottom: 0.25rem;"></li>
-                          </ul>
+                          <!-- Párrafos -->
+                          <p v-if="block.type === 'paragraph'" class="post-body" v-html="formatLinks(block.data.text)"
+                            style="font-size: 0.95rem; margin: 0;"></p>
+
+                          <!-- Títulos H2, H3, H4 -->
+                          <h2 v-else-if="block.type === 'header' && block.data.level === 2"
+                            v-html="formatLinks(block.data.text)"
+                            style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1.4rem;">
+                          </h2>
+                          <h3 v-else-if="block.type === 'header' && block.data.level === 3"
+                            v-html="formatLinks(block.data.text)"
+                            style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1.2rem;">
+                          </h3>
+                          <h4 v-else-if="block.type === 'header' && block.data.level === 4"
+                            v-html="formatLinks(block.data.text)"
+                            style="margin: 0.75rem 0 0.25rem 0; font-weight: 700; color: var(--accent); font-size: 1rem;">
+                          </h4>
+
+                          <!-- Listas -->
+                          <div v-else-if="block.type === 'list'" style="margin: 0.5rem 0; padding-left: 1.2rem;">
+                            <ol v-if="block.data.style === 'ordered'" style="margin: 0; padding: 0;">
+                              <li v-for="(item, i) in block.data.items" :key="i" v-html="formatLinks(item)"
+                                style="font-size: 0.95rem; margin-bottom: 0.25rem;"></li>
+                            </ol>
+                            <ul v-else style="margin: 0; padding: 0; list-style-type: disc;">
+                              <li v-for="(item, i) in block.data.items" :key="i" v-html="formatLinks(item)"
+                                style="font-size: 0.95rem; margin-bottom: 0.25rem;"></li>
+                            </ul>
+                          </div>
+
+                          <!-- Imágenes multimedia -->
+                          <div v-else-if="block.type === 'image'" style="margin-top: 0.5rem; text-align: center;">
+                            <img :src="block.data.file.url" :alt="block.data.caption"
+                              style="max-width: 100%; border-radius: 6px; border: 1px solid var(--border);" />
+                            <small v-if="block.data.caption"
+                              style="display: block; color: var(--text-muted); font-style: italic; margin-top: 2px;">{{
+                              block.data.caption }}</small>
+                          </div>
+
                         </div>
+                      </template>
 
-                        <!-- Imágenes multimedia subidas -->
-                        <div v-else-if="block.type === 'image'" style="margin-top: 0.5rem; text-align: center;">
-                          <img :src="block.data.file.url" :alt="block.data.caption" style="max-width: 100%; border-radius: 6px; border: 1px solid var(--border);" />
-                          <small v-if="block.data.caption" style="display: block; color: var(--text-muted); font-style: italic; margin-top: 2px;">{{ block.data.caption }}</small>
-                        </div>
+                      <!-- CASO 2: FORMATO ANTIGUO (Compatibilidad con texto plano) -->
+                      <template v-else-if="post.responses_json[q.id]">
+                        <!-- Si es un string directo o un formato viejo, lo muestra como texto plano respetando saltos de línea -->
+                        <p class="post-body"
+                          v-html="formatLinks(typeof post.responses_json[q.id] === 'string' ? post.responses_json[q.id] : JSON.stringify(post.responses_json[q.id]))"
+                          style="font-size: 0.95rem; margin: 0; white-space: pre-wrap;"></p>
+                      </template>
 
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -646,10 +685,10 @@
         const posts = ref([])
         const studentName = ref(localStorage.getItem('saved_student_name') || '')
         const newQuestionText = ref('')
-        
+
         // RECOMENDACIÓN: Cambia esto a 'questions' si quieres que el estudiante empiece viendo el cuestionario por defecto
-        const currentView = ref('questions') 
-        
+        const currentView = ref('questions')
+
         let realtimeChannel = null
 
         const saveName = () => {
@@ -869,7 +908,7 @@
               schema: 'public',
               table: 'case_study_responses_v2',
               filter: `session_id=eq.${sessionId.value}`
-  }, (payload) => {
+            }, (payload) => {
               if (payload.eventType === 'INSERT') {
                 if (!posts.value.some(p => p.id === payload.new.id)) {
                   posts.value.unshift(payload.new)
