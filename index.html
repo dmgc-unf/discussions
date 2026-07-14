@@ -570,11 +570,11 @@
       <!-- Se muestra de forma fija si eres admin o si el alumno activa la vista 'board' -->
       <div v-if="isAdmin || currentView === 'board'" class="panel feed-panel">
         <h2>
-          <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 1rem;">            
+            <span>Activity Board</span>
             <button v-if="!isAdmin" @click="currentView = 'questions'" class="view-toggle-btn">
               ↩ Back to Questions
             </button>
-            <span>Activity Board</span>
           </div>
           <span class="live-badge">● LIVE</span>
         </h2>
