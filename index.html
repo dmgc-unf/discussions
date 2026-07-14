@@ -7,7 +7,10 @@
   <title>Classroom Live Forum & CMS (Multi-Video)</title>
 
   <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
-
+  <!-- Editor.js Core -->
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.29.0"></script>
+  <!-- Plugin oficial de Imagen -->
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@2.9.0"></script>
   <script type="importmap">
     {
       "imports": {
@@ -15,6 +18,8 @@
         "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
       }
     }
+
+    
   </script>
 
   <style>
@@ -470,8 +475,13 @@
         <div v-for="(q, idx) in questions" :key="q.id" class="question-block">
           <p class="question-text"><strong>Q{{ idx + 1 }}:</strong> {{ q.question_text }}</p>
           <div class="form-group">
-            <label>Your Answer</label>
-            <textarea v-model="answers[q.id]" rows="3" :placeholder="'Write your answer here...'"></textarea>
+            <!-- <label>Your Answer</label>
+            <textarea v-model="answers[q.id]" rows="3" :placeholder="'Write your answer here...'"></textarea> -->
+            <label>Your Answer (Text, links & images)</label>
+            /* Contenedor dinámico para Editor.js usando el ID de la pregunta */
+            <div :id="'editor-' + q.id"
+              style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; color: #000;">
+            </div>
           </div>
         </div>
 
@@ -514,23 +524,43 @@
                     <span class="q-label">Q{{ idx + 1 }}: {{ q.question_text }}</span>
 
                     <!-- Componente colapsable nativo -->
-                    <p class="post-body" style="white-space: pre-wrap;">{{ post.responses_json[q.id] }}</p>
+                    <!-- <p class="post-body" style="white-space: pre-wrap;">{{ post.responses_json[q.id] }}</p> -->
+                    <!-- Iteramos sobre los bloques de Editor.js que guardamos en la base de datos -->
+                    <div class="post-body-editorjs">
+                      <div v-for="block in (post.responses_json[q.id]?.blocks || [])" :key="block.id"
+                        style="margin-bottom: 0.5rem;">
 
+                        <!-- Si el bloque es un párrafo de texto -->
+                        <p v-if="block.type === 'paragraph'" class="post-body" v-html="block.data.text"
+                          style="font-size: 0.9rem; margin: 0;"></p>
+
+                        <!-- Si el bloque es una imagen subida por el alumno -->
+                        <div v-else-if="block.type === 'image'" style="margin-top: 0.5rem; text-align: center;">
+                          <img :src="block.data.file.url" :alt="block.data.caption"
+                            style="max-width: 100%; border-radius: 6px; border: 1px solid var(--border);" />
+                          <small v-if="block.data.caption"
+                            style="display: block; color: var(--text-muted); font-style: italic; margin-top: 2px;">
+                            {{ block.data.caption }}
+                          </small>
+                        </div>
+
+                      </div>
+                    </div>
                   </div>
                 </div>
-             
-          <!-- <div v-for="(ansText, qId) in post.responses_json" :key="qId" class="post-body-segment">
+
+                <!-- <div v-for="(ansText, qId) in post.responses_json" :key="qId" class="post-body-segment">
               <span class="q-label">{{ getQuestionTextById(qId) }}</span>
               <p class="post-body">{{ ansText }}</p>
             </div> -->
-        </div>
-           <span class="read-more-toggle"></span>
+              </div>
+              <span class="read-more-toggle"></span>
             </summary>
           </details>
+        </div>
       </div>
-    </div>
 
-  </div>
+    </div>
   </div>
 
   <script type="module">
@@ -555,6 +585,7 @@
 
         const questions = ref([])
         const answers = ref({})
+        const editorInstances = {}
         const posts = ref([])
         const studentName = ref(localStorage.getItem('saved_student_name') || '')
         const newQuestionText = ref('')
@@ -605,6 +636,8 @@
           if (qData) {
             questions.value = qData
             qData.forEach(q => { if (!answers.value[q.id]) answers.value[q.id] = '' })
+
+            setTimeout(() => { initEditors() }, 100)
           }
         }
 
@@ -668,9 +701,18 @@
           if (!error) posts.value = data
         }
 
+        // const allQuestionsAnswered = computed(() => {
+        //   if (questions.value.length === 0) return false
+        //   return questions.value.every(q => answers.value[q.id] && answers.value[q.id].trim() !== '')
+        // })
+
         const allQuestionsAnswered = computed(() => {
           if (questions.value.length === 0) return false
-          return questions.value.every(q => answers.value[q.id] && answers.value[q.id].trim() !== '')
+          return questions.value.every(q => {
+            const ans = answers.value[q.id]
+            // Validamos que exista el objeto JSON generado por Editor.js y contenga bloques de contenido
+            return ans && ans.blocks && ans.blocks.length > 0
+          })
         })
 
         const submitAnswers = async () => {
@@ -685,7 +727,11 @@
             }])
 
           if (!error) {
-            questions.value.forEach(q => { answers.value[q.id] = '' })
+            // questions.value.forEach(q => { answers.value[q.id] = '' })
+            questions.value.forEach(q => {
+              answers.value[q.id] = null
+              if (editorInstances[q.id]) editorInstances[q.id].clear()
+            })
           }
         }
 
@@ -702,6 +748,70 @@
 
         const formatTime = (dateString) => {
           return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+
+        const uploadImageToSupabase = async (file) => {
+          const fileExt = file.name.split('.').pop()
+          const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`
+
+          // Subimos el binario directamente al bucket de archivos
+          const { data, error } = await supabase.storage
+            .from('imagenes-respuestas')
+            .upload(fileName, file)
+
+          if (error) {
+            console.error("Error al subir archivo a Storage:", error)
+            return { success: 0 }
+          }
+
+          // Generamos la URL pública que Editor.js incrustará en el bloque de imagen
+          const { data: { publicUrl } } = supabase.storage
+            .from('imagenes-respuestas')
+            .getPublicUrl(fileName)
+
+          return {
+            success: 1,
+            file: {
+              url: publicUrl
+            }
+          }
+        }
+
+        const initEditors = () => {
+          // Destruir editores existentes si los hubiera para evitar duplicados
+          Object.keys(editorInstances).forEach(key => {
+            if (editorInstances[key] && typeof editorInstances[key].destroy === 'function') {
+              editorInstances[key].destroy()
+            }
+            delete editorInstances[key]
+          })
+
+          // Inicializar un Editor.js para cada pregunta activa
+          questions.value.forEach(q => {
+            const containerId = `editor-${q.id}`
+
+            // Validamos que el contenedor exista en el DOM antes de montarlo
+            if (!document.getElementById(containerId)) return
+
+            editorInstances[q.id] = new EditorJS({
+              holder: containerId,
+              placeholder: 'Escribe tu respuesta, inserta links o arrastra imágenes...',
+              tools: {
+                image: {
+                  class: ImageTool,
+                  config: {
+                    // El plugin le pasa el archivo a nuestra función de Supabase
+                    byFile: uploadImageToSupabase
+                  }
+                }
+              },
+              // Sincronizamos los cambios del editor en nuestro objeto reactivo 'answers'
+              onChange: async () => {
+                const savedData = await editorInstances[q.id].save()
+                answers.value[q.id] = savedData
+              }
+            })
+          })
         }
 
         onMounted(async () => {
